@@ -1,0 +1,8 @@
+analyze.py
+test.py
+downloaded_*
+*.txt
+!requirements.txt
+*.html
+*.db
+*.json
