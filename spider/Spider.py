@@ -69,7 +69,7 @@ class Spider:
       """) == False:
       raise InitException("file表创建失败")
     if not os.path.exists(config["save_dir_name"]):
-      os.mkdir(config["save_dir_name"])
+      os.makedirs(config["save_dir_name"])
 
   def __del__(self):
     """
