@@ -57,7 +57,11 @@ base_config = {
   "__main__": {
     # 给main.py的配置
     "main": {
-      "download_list": []
+      "download_list": [],
+      # 是否输出新增加的文件列表
+      "print_new_file": True,
+      # 将新文件另存到另一个文件夹
+      "save_as": "downloaded_latest/"
     },
     # 给check.py的配置
     "check": {

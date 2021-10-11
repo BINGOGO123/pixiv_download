@@ -3,6 +3,7 @@ import requests
 import json
 import os
 import re
+from datetime import datetime
 import importlib
 from bs4 import BeautifulSoup
 from tool.tool import get_md5
@@ -48,6 +49,7 @@ class Spider:
     logger.info("Spider()")
     self.s = requests.session()
     self.s.headers.update(self.__headers)
+    self.start_time = datetime.now()
     # 根据config选择使用的数据库
     package_name = "database.{}".format(config["database"]["type"])
     try:
@@ -292,7 +294,8 @@ class Spider:
       except PermissionError:
         logger.exception("文件写入失败")
         continue
-      if False != self.database.escape_execute("insert into file (url, storage_path, md5) values ({}, {}, {})", image_url, storage_path, get_md5(content)):
+      # 由于sqlite3的时区使用的不是本地时区，而mysql和python获取的时间均为本地时区，所以如果使用默认的download_time,会导致时间不一致，这里统一按照python代码获取的时间来存储和查询
+      if False != self.database.escape_execute("insert into file (url, storage_path, md5, download_time) values ({}, {}, {}, {})", image_url, storage_path, get_md5(content), datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M:%S")):
         successful += 1
     logger.info("图片总数={} 下载成功={} 下载失败={}".format(total, successful, total - successful))
     return True
@@ -515,7 +518,8 @@ class Spider:
     except PermissionError:
       logger.exception("文件写入失败")
       return False
-    if self.database.escape_execute("insert into file (url, storage_path, md5) values ({}, {}, {})", url, storage_path, get_md5(content)) == False:
+    # 由于sqlite3的时区使用的不是本地时区，而mysql和python获取的时间均为本地时区，所以如果使用默认的download_time,会导致时间不一致，这里统一按照python代码获取的时间来存储和查询
+    if self.database.escape_execute("insert into file (url, storage_path, md5, download_time) values ({}, {}, {}, {})", url, storage_path, get_md5(content), datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M:%S")) == False:
       return False
     return True
 
@@ -532,3 +536,11 @@ class Spider:
       logger.exception("解析错误")
       return False
     return content.encode("utf8")
+
+  def get_new_files(self):
+    """
+    返回最新增加的图片地址和网址
+    """
+    sql = "select storage_path,url from file where download_time >= {}"
+    ret = self.database.escape_execute(sql, datetime.strftime(self.start_time,"%Y-%m-%d %H:%M:%S"))
+    return [] if ret == False else ret

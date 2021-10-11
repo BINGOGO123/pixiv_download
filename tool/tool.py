@@ -2,6 +2,8 @@ import logging
 import os
 import datetime
 import hashlib
+import pythoncom
+from win32com.shell import shell
 
 def cover(o1, o2):
   """
@@ -57,3 +59,28 @@ def get_config(base_config, *args):
     return None
   else:
     return get_config(base_config.get(args[0]), *args[1:])
+
+def create_shortcut(source, lnkname):
+  """
+  建立source到lnkname的快捷方式，若lnkname不是.lnk格式会在最后加上.lnk
+
+  该方法可能会抛出异常
+  """
+  shortcut = pythoncom.CoCreateInstance(shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink)
+  shortcut.SetPath(source)
+  if os.path.splitext(lnkname)[-1] != '.lnk':
+    lnkname += ".lnk"
+  shortcut.QueryInterface(pythoncom.IID_IPersistFile).Save(lnkname, 0)
+
+def del_file(path):
+  """
+  删除path目录及path目录下的所有内容
+  """
+  ls = os.listdir(path)
+  for i in ls:
+    c_path = os.path.join(path, i)
+    if os.path.isdir(c_path):
+      del_file(c_path)
+    else:
+      os.remove(c_path)
+  os.rmdir(path)

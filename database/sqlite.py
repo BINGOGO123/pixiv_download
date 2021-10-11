@@ -9,7 +9,9 @@ class Db(AbstractDb):
     一次连接，没用连接池
     """
     logger.debug("Db(db={})".format(db))
-    self.db = sqlite3.connect("{}.db".format(db))
+    if db.split(".")[-1] != "db":
+      db += ".db"
+    self.db = sqlite3.connect(db)
 
   def __del__(self):
     """
