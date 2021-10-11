@@ -131,7 +131,7 @@ class Spider:
     """
     logger.info("download(uid={}, route={})".format(uid, route))
     # 本次下载存储的文件路径
-    filepath = "{}{}/{}/".format(config["save_dir_name"], uid, route)
+    filepath = os.path.join(config["save_dir_name"], uid, route)
     if not os.path.exists(filepath):
       os.makedirs(filepath)
       logger.info("存储路径不存在，创建 path={}".format(filepath))
@@ -232,11 +232,11 @@ class Spider:
     name = title + "_" + pid
     name = self.__regular.sub("#", name)
     if config.get("image_by_folder") == "all" or config.get("image_by_folder") == "multiple" and len(image_urls) > 1:
-      base_path = "{}{}/".format(filepath, name)
+      base_path = os.path.join(filepath, name + "/")
       if not os.path.exists(base_path):
         os.makedirs(base_path)
     else:
-      base_path = "{}{}_".format(filepath, name)
+      base_path = os.path.join(filepath, name + "_")
 
     # 依次下载每张图片并存储
     total, successful = len(image_urls), 0
@@ -355,7 +355,7 @@ class Spider:
             logger.info("该系列在本轮已经下载过，跳过")
             continue
           series_data = self.get_series(seriesId)
-          series_path = "{}{}_{}/".format(filepath, self.__regular.sub("#", seriesTitle), seriesId)
+          series_path = os.path.join(filepath, self.__regular.sub("#", seriesTitle) + "_" + str(seriesId))
           if not os.path.exists(series_path):
             os.makedirs(series_path)
           for pid,title in series_data:
@@ -418,7 +418,7 @@ class Spider:
             logger.info("该系列在本轮已经下载过，跳过")
             continue
           series_data = self.get_series(seriesId)
-          series_path = "{}{}_{}/".format(filepath, self.__regular.sub("#", seriesTitle), seriesId)
+          series_path = os.path.join(filepath, self.__regular.sub("#", seriesTitle) + "_" + str(seriesId))
           if not os.path.exists(series_path):
             os.makedirs(series_path)
           for pid,title in series_data:
@@ -468,7 +468,7 @@ class Spider:
     # 生成文件存储路径
     name = title + "_" + pid
     name = self.__regular.sub("#", name)
-    storage_path = "{}{}.txt".format(filepath, name)
+    storage_path = os.path.join(filepath, name + ".txt")
     # 最终存储时相对路径转换为绝对路径
     storage_path = os.path.abspath(storage_path)
     # 查询该路径是否下载了该url的小说

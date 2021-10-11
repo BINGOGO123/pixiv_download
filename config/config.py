@@ -1,7 +1,7 @@
 # 默认的配置
 base_config = {
   "spider": {
-    # 路径可以为相对路径或者绝对路径可以用\或者/但最后一定要有一个\或者/
+    # 路径可以为相对路径或者绝对路径可以用\或者/
     "save_dir_name": "downloaded/",
     "your_uid": "",
     "cookie": "",
@@ -31,7 +31,7 @@ base_config = {
       }
     },
     "logs": {
-      # 路径可以为相对路径或者绝对路径可以用\或者/但最后一定要有一个\或者/
+      # 路径可以为相对路径或者绝对路径可以用\或者/
       "logs_dir": "logs/",
       "logger_level": "logging.DEBUG",
       "file_level": "logging.DEBUG",
@@ -42,7 +42,7 @@ base_config = {
     # 当数据库不存在时是否创建，仅对pymysql有效
     "create": True,
     "logs": {
-      # 路径可以为相对路径或者绝对路径可以用\或者/但最后一定要有一个\或者/
+      # 路径可以为相对路径或者绝对路径可以用\或者/
       "logs_dir": "logs/",
       "logger_level": "logging.DEBUG",
       "file_level": "logging.DEBUG",

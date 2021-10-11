@@ -34,7 +34,7 @@ def initialLogger(logger, name, logs_dir, logger_level, file_level, stream_level
   # 如果不存在logs文件夹则创建
   if not os.path.exists(logs_dir):
     os.makedirs(logs_dir)
-  handler1 = logging.FileHandler(logs_dir + name + "." + str(datetime.date.today()) + ".log","a",encoding="utf8")
+  handler1 = logging.FileHandler(os.path.join(logs_dir, name + "." + str(datetime.date.today()) + ".log"),"a",encoding="utf8")
   handler2 = logging.StreamHandler()
   formatter1 = logging.Formatter(fmt="%(asctime)s [%(levelname)s] [%(lineno)d] [%(funcName)s] >> %(message)s",datefmt="%Y-%m-%d %H:%M:%S")
   formatter2 = logging.Formatter(fmt = "[%(levelname)s] >> %(message)s")
