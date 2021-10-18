@@ -29,13 +29,26 @@ if __name__ == "__main__":
       # 将新增加的文件的快捷方式放于target目录中
       if config.get("save_as") != None and config.get("save_as") != False:
         target = os.path.abspath(config.get("save_as"))
-        # 先把上次存储的快捷方式全部删除，再重新创建该文件夹
-        if os.path.exists(target):
-          del_file(target)
-        os.makedirs(target)
-        print("\n本次下载新增文件可见文件夹：{}".format(target))
+        save_path = os.path.join(target, str(spider.get_start_time().date()))
+        # 如果说该文件夹已经存在，那么就在最末级文件夹后面加上-数字作为后缀
+        if os.path.exists(save_path):
+          order = 1
+          while os.path.exists("{}-{}".format(save_path, order)):
+            order += 1
+          save_path = "{}-{}".format(save_path, order)
+        os.makedirs(save_path)
+        print("\n本次下载新增文件可见文件夹：{}".format(save_path))
         for i in range(len(ret)):
-          create_shortcut(ret[i][0], os.path.join(target, os.path.split(ret[i][0])[-1] + ".lnk"))
+          # 如果快捷文件的名称已经存在那么就通过后缀的方式更改名称
+          shortcut = os.path.join(save_path, os.path.split(ret[i][0])[-1])
+          if os.path.exists(shortcut + ".lnk"):
+            order = 1
+            while os.path.exists("{}_{}.lnk".format(shortcut, order)):
+              order += 1
+            shortcut = "{}_{}.lnk".format(shortcut, order)
+          else:
+            shortcut += ".lnk"
+          create_shortcut(ret[i][0], shortcut)
 
       # 输出新增加的文件，这里获取到了storage_path和url但是没必要输出url，只需要输出storage_path即可，多了反而显得凌乱
       if config.get("print_new_file") == True:

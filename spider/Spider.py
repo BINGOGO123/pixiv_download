@@ -541,6 +541,12 @@ class Spider:
     """
     返回最新增加的图片地址和网址
     """
-    sql = "select storage_path,url from file where download_time >= {}"
+    sql = "select storage_path,url from file where download_time >= {} order by download_time asc"
     ret = self.database.escape_execute(sql, datetime.strftime(self.start_time,"%Y-%m-%d %H:%M:%S"))
     return [] if ret == False else ret
+
+  def get_start_time(self):
+    """
+    返回Spider对象的建立时间
+    """
+    return self.start_time
