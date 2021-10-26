@@ -6,3 +6,5 @@ downloaded_*
 *.html
 *.db
 *.json
+__pycache__
+virtual

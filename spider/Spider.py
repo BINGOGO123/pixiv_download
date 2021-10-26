@@ -58,7 +58,7 @@ class Spider:
       logger.exception("模块 {} 不存在".format(package_name))
       raise
     # 这里可能有连接失败的异常，但是我们不需要处理，直接raise即可
-    self.database = db.Db(**config["database"]["params"])
+    self.database = db.Db(**config["database"][config["database"]["type"]])
     if self.database.execute("""
       create table if not exists file(
         url varchar(1000) not null,
@@ -83,8 +83,8 @@ class Spider:
     """
     logger.debug("get_response(url={}, kwargs={})".format(url, kwargs))
     if kwargs.get("timeout") == None:
-      kwargs["timeout"] = config["timeout"]
-    count, max_count = 0, config["request_max_count"]
+      kwargs["timeout"] = int(config["timeout"])
+    count, max_count = 0, int(config["request_max_count"])
     while True:
       try:
         res = self.s.get(url, **kwargs)

@@ -1,32 +1,34 @@
 # 默认的配置
-base_config = {
+default_config = {
   "spider": {
     # 路径可以为相对路径或者绝对路径可以用\或者/
     "save_dir_name": "downloaded/",
     "your_uid": "",
     "cookie": "",
-    "timeout": 20,
-    "request_max_count": 5,
+    # 该项字符串必须为数字组成
+    "timeout": "20",
+    # 该项字符串必须为数字组成
+    "request_max_count": "5",
     # 在判断数据库信息是否存在时，是否和硬盘中实际文件的md5进行比较
     "md5_match": True,
     # 在数据库查询时是否将无效的条目清除掉
     "clear": True,
     # all表示所有帖子下的图片均存放在单独的文件夹下，multiple表示当一个帖子下有多张图片时才放在单独文件夹下，none表示所有帖子的图片存放在同一个文件夹下面
     "image_by_folder": "multiple",
+    # 上面一个配置的所有可选选项
+    "image_by_folder_options": ["none", "multiple", "all"],
     # 数据库连接信息，可选mysql或sqlite
-    # "database": {
-    #   "type": "mysql",
-    #   "params": {
-    #     "host": "localhost",
-    #     "port": 3306,
-    #     "user": "",
-    #     "password": "",
-    #     "db": ""
-    #   }
-    # },
     "database": {
       "type": "sqlite",
-      "params": {
+      "mysql": {
+        "host": "localhost",
+        # 该项字符串必须为数字组成
+        "port": "3306",
+        "user": "",
+        "password": "",
+        "db": ""
+      },
+      "sqlite": {
         "db": "pixiv_download"
       }
     },
@@ -60,7 +62,9 @@ base_config = {
       "download_list": [],
       # 是否输出新增加的文件列表
       "print_new_file": True,
-      # 将新文件另存到另一个文件夹
+      # 是否将新文件快捷方式另外存储
+      "save_new_file": True,
+      # 新文件快捷方式另外存储的位置
       "save_as": "downloaded_latest/"
     },
     # 给check.py的配置
@@ -77,7 +81,7 @@ base_config = {
       #   "type": "mysql",
       #   "params": {
       #     "host": "localhost",
-      #     "port": 3306,
+      #     "port": "3306",
       #     "user": "",
       #     "password": "",
       #     "db": ""

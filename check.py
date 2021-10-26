@@ -2,7 +2,7 @@
 # 默认输出"check.txt"
 
 import importlib
-from config.config import base_config
+from config import base_config
 import os
 from tool.tool import get_md5
 import sys
@@ -17,7 +17,7 @@ if __name__ == "__main__":
   print("config = {}\nconfig_database = {}".format(config, config_database))
   package_name = "database.{}".format(config_database["type"])
   db = importlib.import_module(package_name)
-  database = db.Db(**config_database["params"])
+  database = db.Db(**config_database[config_database["type"]])
   sql = "select storage_path,url,md5 from file"
   ret = database.execute(sql)
   record = open(config["output"], "w", encoding="utf8")

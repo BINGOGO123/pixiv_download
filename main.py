@@ -3,7 +3,7 @@
 from spider.Spider import Spider
 import sys
 import os
-from config.config import base_config
+from config import base_config
 from tool.tool import create_shortcut, del_file
 
 config = base_config[__name__]["main"]
@@ -23,11 +23,11 @@ if __name__ == "__main__":
     spider.download(sys.argv[1])
 
   # 对本次下载新增的文件进行处理
-  if config.get("print_new_file") == True or config.get("save_as") != None and config.get("save_as") != False:
+  if config.get("print_new_file") == True or config.get("save_new_file") == True:
     ret = spider.get_new_files()
     if ret != False and ret != None: 
       # 将新增加的文件的快捷方式放于target目录中
-      if config.get("save_as") != None and config.get("save_as") != False:
+      if config.get("save_new_file") == True and config.get("save_as") != None and config.get("save_as") != False:
         target = os.path.abspath(config.get("save_as"))
         save_path = os.path.join(target, str(spider.get_start_time().date()))
         # 如果说该文件夹已经存在，那么就在最末级文件夹后面加上-数字作为后缀

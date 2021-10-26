@@ -1,7 +1,7 @@
 import logging
 import os
 import datetime
-from config.config import base_config
+from config import base_config
 
 config = base_config[__name__]
 logger = logging.getLogger(__name__)

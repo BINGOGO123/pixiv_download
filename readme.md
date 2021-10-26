@@ -14,6 +14,7 @@ Python版本：3.7.9
 pixiv_download
 │
 │   main.py            -- 主函数
+|   gui.py             -- 可视化客户端程序
 |   check.py           -- 核验数据库记录与文件系统是否匹配
 |   migrate.py         -- 用以不同数据库之间记录迁移
 |   config.json        -- 配置文件，会覆盖项目中默认的配置信息
@@ -27,6 +28,9 @@ pixiv_download
 │   │   ...
 |
 └───spider             -- 爬虫
+│   │   ...
+|
+└───component          -- 可视化组件
 │   │   ...
 |
 └───tool               -- 工具
@@ -111,7 +115,7 @@ pixiv_download
    ```json
    "database": {
      "type": "mysql",
-     "params": {
+     "mysql": {
        "host": "localhost",
        "port": 3306,
        "user": "",
@@ -160,3 +164,11 @@ pixiv_download
 
 参考`config/config.py`，在`config.json`中更改会覆盖`config/config.py`中的默认项
 
+## 下一步计划
+
+- [ ] 确定并更新可视化客户端界面风格
+- [ ] 补充可视化客户端的日志模块
+- [ ] 将所有可配置项加入设置功能中
+- [ ] 在可视化客户端增加下载管理功能
+- [ ] 在可视化客户端增加阅览功能
+- [ ] Linux与Mac平台的适配性

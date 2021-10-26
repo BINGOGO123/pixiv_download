@@ -15,6 +15,7 @@ class Db(AbstractDb):
     若连接失败，抛出database.err.ConnectionException
     """
     logger.debug("Db(host={}, port={}, user={}, password={}, db={})".format(host, port, user, password, db))
+    port = int(port)
     db_connect_params = {
       "creator": pymysql,  # 使用链接数据库的模块
       "maxconnections": 6,  # 连接池允许的最大连接数，0和None表示不限制连接数
