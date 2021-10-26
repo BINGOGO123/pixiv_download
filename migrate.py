@@ -1,6 +1,6 @@
 # 数据库迁移
 
-from config.config import base_config
+from config import base_config
 import sys
 import importlib
 
@@ -47,6 +47,6 @@ if __name__ == "__main__":
           f.write("[Correct]\n")
         else:
           f.write("[Error]\n")
-        f.write("storage_path={}\nurl={}\n,md5={}\ndownload_time={}\n\n".format(*record))
+        f.write("storage_path={}\nurl={}\nmd5={}\ndownload_time={}\n\n".format(*record))
   finally:
     f.close()

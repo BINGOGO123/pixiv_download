@@ -3,6 +3,7 @@ import os
 import datetime
 import hashlib
 import pythoncom
+import copy
 from win32com.shell import shell
 
 def cover(o1, o2):
@@ -14,8 +15,9 @@ def cover(o1, o2):
   for key in o2:
     if type(o2.get(key)) == dict and type(o1.get(key)) == dict:
       cover(o1[key], o2[key])
+    # 这里一定要copy，否则如果o2[key]也是对象，o1[key]会直接指向o2[key]
     else:
-      o1[key] = o2[key]
+      o1[key] = copy.deepcopy(o2[key])
 
 # 用在spider.Spider和check中
 def get_md5(data:bytes):
@@ -84,3 +86,19 @@ def del_file(path):
     else:
       os.remove(c_path)
   os.rmdir(path)
+
+def setDict(d, params, val):
+  """
+  d是一个字典或者列表，params是一个列表，通过params修改d中对应项的值为val
+  """
+  index = "".join([f"[params[{i}]]" for i in range(len(params))])
+  exec(f"d{index} = val")
+
+def getDict(d, params):
+  """
+  d是一个字典或者列表，params是一个列表，通过params获取d中对应项的值
+  """
+  result = d
+  for item in params:
+    result = result[item]
+  return result
