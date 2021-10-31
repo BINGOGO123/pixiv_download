@@ -429,11 +429,20 @@ class Setting(QFrame):
       {
         background:rgb(180, 180, 180);
       }
-      QScrollBar::add-line:vertical
+      QScrollBar:horizontal
       {
+        height:12px;
+        background-color: rgb(200, 200, 200);
       }
-      QScrollBar::sub-line:vertical
+      QScrollBar::handle:horizontal
       {
+        background-color: rgb(200, 200, 200);
+        margin-left:0px;
+        margin-right:0px;
+      }
+      QScrollBar::handle:horizontal:hover
+      {
+        background:rgb(180, 180, 180);
       }
       """
     )
