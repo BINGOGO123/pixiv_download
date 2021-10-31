@@ -2,8 +2,8 @@
 
 import os
 from PyQt6 import QtCore
-from PyQt6.QtGui import QFont, QIcon, QKeySequence
-from PyQt6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PyQt6.QtGui import QColor, QFont, QIcon, QKeySequence
+from PyQt6.QtWidgets import QCheckBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
 import copy
 import json
 
@@ -258,7 +258,7 @@ class Setting(QFrame):
       layout_part.addWidget(part["title"])
       # 添加重置按钮
       button = ResetButton()
-      layout_part.addSpacing(5)
+      # layout_part.addSpacing(5)
       layout_part.addWidget(button)
       layout_part.addStretch(1)
       layout_scroll.addLayout(layout_part)
@@ -280,8 +280,8 @@ class Setting(QFrame):
       QPushButton {
         border: none;
         padding: 5px 10px 5px 10px;
-        border-top-left-radius: 12px;
-        border-bottom-left-radius: 12px;
+        border-top-left-radius: 14px;
+        border-bottom-left-radius: 14px;
         background-color: white;
         border-width: 1px;
         border-style: solid;
@@ -320,8 +320,8 @@ class Setting(QFrame):
         border: none;
         padding: 5px 10px 5px 10px;
         background-color: white;
-        border-top-right-radius: 12px;
-        border-bottom-right-radius: 12px;
+        border-top-right-radius: 14px;
+        border-bottom-right-radius: 14px;
         border-width: 1px;
         border-style: solid;
         border-color: gray;
@@ -351,7 +351,9 @@ class Setting(QFrame):
     layout_function.addWidget(self.saveButton)
     layout_function.addWidget(self.cancelButton)
     layout_function.addWidget(self.resetButton)
+    layout_function.addStretch(1)
     layout_function.setSpacing(0)
+    layout_function.setContentsMargins(0, 6, 0, 6)
 
     # 功能设置
     self.saveButton.clicked.connect(lambda val : self.save(False))
@@ -367,15 +369,74 @@ class Setting(QFrame):
     # scroll.setMinimumSize(300, 400)
     # scrollarea 作为一个组件，可以设置窗口
     scroll.setWidget(scroll_widget)
+    # 设置没有边框
+    scroll.setFrameShape(QFrame.Shape.NoFrame)
     layout_final.addWidget(scroll)
-    layout_final.addLayout(layout_function)
+    function_widget = QFrame()
+    function_widget.setLayout(layout_function)
+    layout_final.addWidget(function_widget)
     layout_final.setContentsMargins(0, 0, 0, 0)
+    layout_final.setSpacing(0)
     self.setLayout(layout_final)
     # 设置边框，因为子组件scroll已经有边框了，所以这里就不用加了
     # self.setFrameShape(QFrame.Shape.StyledPanel)
 
     # 所有工作完成之后更改一次按钮状态
     self.buttonStateChange()
+
+    # 最终样式修改
+    scroll_widget.setStyleSheet(
+      """
+      QFrame {
+        background-color: transparent;
+      }
+      """
+    )
+    function_widget.setStyleSheet(
+      """
+      QFrame {
+        background-color: rgb(240, 240, 240);
+        background-color: white;
+        background-color: transparent;
+        background-color: rgb(250, 250, 250);
+        background-color: rgb(238, 238, 238);
+      }
+      """
+    )
+    qds = QGraphicsDropShadowEffect()
+    qds.setOffset(0, 0)
+    qds.setColor(QColor(200, 200, 200))
+    qds.setBlurRadius(15)
+    function_widget.setGraphicsEffect(qds)
+    scroll_widget.setContentsMargins(8, 0, 0, 0)
+    scroll.setStyleSheet(
+      """
+      QScrollArea {
+        background-color: transparent;
+      }
+      QScrollBar:vertical
+      {
+        width:12px;
+        background-color: rgb(200, 200, 200);
+      }
+      QScrollBar::handle:vertical
+      {
+        background-color: rgb(200, 200, 200);
+        margin-left:0px;
+        margin-right:0px;
+      }
+      QScrollBar::handle:vertical:hover
+      {
+        background:rgb(180, 180, 180);
+      }
+      QScrollBar::add-line:vertical
+      {
+      }
+      QScrollBar::sub-line:vertical
+      {
+      }
+      """
+    )
 
   # 保存功能
   def save(self, alert = False):

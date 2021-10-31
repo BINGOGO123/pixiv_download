@@ -1,8 +1,9 @@
 # 侧边栏
 
+from PyQt6 import QtCore
 from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QVBoxLayout
+from PyQt6.QtGui import QColor, QIcon
+from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QPushButton, QVBoxLayout
 
 class Side(QFrame):
 
@@ -54,19 +55,62 @@ class Side(QFrame):
     vbox.addWidget(aboutButton)
     vbox.addWidget(settingButton)
     vbox.addStretch(1)
+    vbox.setSpacing(0)
     self.setLayout(vbox)
 
     # 布局更改
     vbox.setContentsMargins(0, 0, 0, 0)
-    # self.setAutoFillBackground(True)
-    # self.setFrameShape(QFrame.Shape.StyledPanel)
-    # self.setFrameShadow(QFrame.Shadow.Sunken)
 
     # 设置每个按钮的点击事件
     for button in self.buttonList:
       button.clicked[bool].connect(self.pressButton)
     # 开始时点击一下userButton
     userButton.click()
+
+    # 设置style
+    buttonStyle = """
+    QPushButton {
+      padding-top: 10px;
+      padding-bottom: 10px;
+      background-color: rgb(245, 245, 245);
+      border-bottom-width: 1px;
+      border-bottom-style: solid;
+      border-bottom-color: rgb(220, 220, 220);
+      font-size: 14px;
+      font-family: SimSong;
+      border: none;
+      font-weight: bold;
+    }
+    QPushButton:hover {
+      background-color: rgb(230, 230, 230);
+    }
+    QPushButton:checked {
+      background-color: rgb(220, 220, 220);
+    }
+    """
+    downloadButton.setStyleSheet(buttonStyle)
+    viewButton.setStyleSheet(buttonStyle)
+    settingButton.setStyleSheet(buttonStyle)
+    userButton.setStyleSheet(buttonStyle)
+    aboutButton.setStyleSheet(buttonStyle)
+    downloadButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+    viewButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+    settingButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+    userButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+    aboutButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+    self.setStyleSheet(
+      """
+      QFrame {
+        background-color: rgb(245, 245, 245);
+      }
+      """
+    )
+    qds = QGraphicsDropShadowEffect()
+    qds.setOffset(0, 0)
+    qds.setColor(QColor(200, 200, 200))
+    qds.setBlurRadius(15)
+    self.setGraphicsEffect(qds)
+    # self.raise_()
     
   def pressButton(self, val):
     pressObj = self.sender()

@@ -15,13 +15,14 @@ class Download(QFrame):
     self.initUI()
 
   def initUI(self):
-    layout = QHBoxLayout()
+    layout = QVBoxLayout()
     title = QLabel("下载管理")
     layout.addWidget(title)
     layout.addStretch(1)
     self.setLayout(layout)
 
-    self.setFrameShape(QFrame.Shape.StyledPanel)
+    self.setContentsMargins(8, 0, 0, 0)
+    # self.setFrameShape(QFrame.Shape.StyledPanel)
 
   # 获取组件当前是否可以切走
   def canSwitchOut(self):

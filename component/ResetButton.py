@@ -12,16 +12,14 @@ class ResetButton(QPushButton):
 
   def initUI(self):
     self.setIcon(QIcon("icons/cancel.svg"))
+    self.setIconSize(QtCore.QSize(12, 12))
     self.setStyleSheet(
       """
       QPushButton {
         border: none;
         padding: 4px; 
-        border-radius: 8px;
+        border-radius: 11px;
         background-color: white;
-        border-width: 1px;
-        border-style: solid;
-        border-color: gray;
       }
       QPushButton:hover {
         background-color: rgb(200, 200, 200);
@@ -31,6 +29,6 @@ class ResetButton(QPushButton):
       }
       """
     )
-    self.setFixedSize(26, 26)
-    self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+    self.setFixedSize(22, 22)
+    # self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
     self.setToolTip("撤销对该部分设置项的修改")

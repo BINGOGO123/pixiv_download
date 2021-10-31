@@ -30,7 +30,8 @@ class About(QFrame):
     layout.addStretch(1)
     self.setLayout(layout)
 
-    self.setFrameShape(QFrame.Shape.StyledPanel)
+    self.setContentsMargins(8, 0, 0, 0)
+    # self.setFrameShape(QFrame.Shape.StyledPanel)
 
   # 获取组件当前是否可以切走
   def canSwitchOut(self):

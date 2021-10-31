@@ -26,13 +26,13 @@ class MainWindow(QMainWindow):
     self.center()
     # self.statusBar()
     self.show()
-    # self.setStyleSheet(
-    #   """
-    #   QMainWindow {
-    #     background-color: white;
-    #   }
-    #   """
-    # )
+    self.setStyleSheet(
+      """
+      QMainWindow {
+        background-color: white;
+      }
+      """
+    )
 
     # 布局信息
     widget = QWidget()
@@ -58,6 +58,8 @@ class MainWindow(QMainWindow):
     for right in self.viewList:
       hbox.addWidget(right)
     widget.setLayout(hbox)
+    hbox.setContentsMargins(0, 0, 0, 0);
+    hbox.setSpacing(0)
     self.setCentralWidget(widget)
 
   def center(self):

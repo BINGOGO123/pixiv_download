@@ -60,11 +60,14 @@ class LineEdit(QFrame):
         border-width: 1px;
         border-style: solid;
         border-color: white;
+        background-color: rgb(245, 245, 245);
       }
       QLineEdit:focus {
         border-width: 1px;
         border-style: solid;
         border-color: gray;
+        border-color: rgb(200, 200, 200);
+        background-color: white;
       }
       """
     )
