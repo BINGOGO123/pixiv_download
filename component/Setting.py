@@ -3,7 +3,7 @@
 import os
 from PyQt6 import QtCore
 from PyQt6.QtGui import QColor, QFont, QIcon, QKeySequence
-from PyQt6.QtWidgets import QCheckBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QCheckBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
 import copy
 import json
 
@@ -85,8 +85,8 @@ class Setting(QFrame):
     def cancelValue(self):
       self.setValue(getDict(base_config, self.params))
     
-  class SDatabaseSelect(QWidget):
-    def __init__(self, outer, params, *args):
+  class SDatabaseSelect(QFrame):
+    def __init__(self, outer, text, params, *args):
       self.outer = outer
       self.params = params
       super().__init__(*args)
@@ -97,7 +97,7 @@ class Setting(QFrame):
       section = {}
       section["title"] = QCheckBox()
       section["title"].setText("sqlite")
-      section["title"].setFont(self.outer.level2)
+      section["title"].setFont(self.outer.level3)
       section["content"] = [
         self.outer.SLineEdit(self.outer, "database", params + ["sqlite", "db"])
       ]
@@ -107,16 +107,17 @@ class Setting(QFrame):
       section = {}
       section["title"] = QCheckBox()
       section["title"].setText("mysql")
-      section["title"].setFont(self.outer.level2)
+      section["title"].setFont(self.outer.level3)
       section["content"] = [
-        self.outer.SLineEdit(self.outer, "host", params + ["mysql", "host"], True, True),
-        self.outer.SLineEdit(self.outer, "port", params + ["mysql", "port"], True),
-        self.outer.SLineEdit(self.outer, "user", params + ["mysql", "user"], True, True),
-        self.outer.SLineEdit(self.outer, "password", params + ["mysql", "password"], True, True, True),
-        self.outer.SLineEdit(self.outer, "database", params + ["mysql", "db"], True, True)
+        Setting.SLineEdit(self.outer, "host", params + ["mysql", "host"], True, True),
+        Setting.SLineEdit(self.outer, "port", params + ["mysql", "port"], True),
+        Setting.SLineEdit(self.outer, "user", params + ["mysql", "user"], True, True),
+        Setting.SLineEdit(self.outer, "password", params + ["mysql", "password"], True, True, True),
+        Setting.SLineEdit(self.outer, "database", params + ["mysql", "db"], True, True)
       ]
       self.widgets.append(section)
 
+      vbox = QVBoxLayout()
       hbox = QHBoxLayout()
       for section in self.widgets:
         db = QFrame()
@@ -131,13 +132,27 @@ class Setting(QFrame):
         db_sub.setLayout(layout_db_sub)
         layout_db.addWidget(db_sub)
         db.setLayout(layout_db)
-        db.setFrameShape(QFrame.Shape.StyledPanel)
+        # db.setFrameShape(QFrame.Shape.StyledPanel)
+        db.setStyleSheet(
+          """
+          .QFrame {
+            border-width: 1px;
+            border-style: solid;
+            border-color: rgb(140, 140, 140);
+          }
+          """
+        )
         hbox.addWidget(db)
         section["sub"] = db_sub
       hbox.addStretch(1)
       hbox.setSpacing(10)
       hbox.setContentsMargins(0, 0, 0, 0)
-      self.setLayout(hbox)
+      title = QLabel(text)
+      title.setFont(self.outer.level4)
+      vbox.addWidget(title)
+      vbox.addLayout(hbox)
+      vbox.setContentsMargins(0, 0, 0, 0)
+      self.setLayout(vbox)
 
       # 这里注意闭包的特性，同时由于connect会传参，因此需要用val占住第一个参数
       for pos in range(len(self.widgets)):
@@ -181,6 +196,46 @@ class Setting(QFrame):
         for item in section["content"]:
           item.cancelValue()
 
+  class SLogEdit(QFrame):
+    def __init__(self, outer, text, params, *args):
+      self.outer = outer
+      self.params = params
+      super().__init__(*args)
+      self.contents = [
+        Setting.SPathSelect(self.outer, "日志存放位置", params + ["logs_dir"], lambda : (self.vFrame.adjustSize(), self.adjustSize(), self.outer.adjustSize())),
+        Setting.SComboBox(self.outer, "日志输出等级", params + ["logger_level"], getDict(self.outer.base_config, params + ["level_options"])),
+        Setting.SComboBox(self.outer, "文件输出等级", params + ["file_level"], getDict(self.outer.base_config, params + ["level_options"])),
+        Setting.SComboBox(self.outer, "命令行输出等级", params + ["stream_level"], getDict(self.outer.base_config, params + ["level_options"]))
+      ]
+      hbox = QHBoxLayout()
+      self.vFrame = vFrame = QFrame()
+      vbox = QVBoxLayout()
+      title = QLabel(text)
+      title.setFont(self.outer.level2)
+      vbox.addWidget(title)
+      for item in self.contents:
+        vbox.addWidget(item)
+      vFrame.setLayout(vbox)
+      # vFrame.setFrameShape(QFrame.Shape.StyledPanel)
+      hbox.addWidget(vFrame)
+      # hbox.addStretch(1)
+      hbox.setContentsMargins(0, 0, 0, 0)
+      self.setLayout(hbox)
+      # self.setDisabled(True)
+
+    def resetDefaultValue(self):
+      for item in self.contents:
+        item.resetDefaultValue()
+    def cancelValue(self):
+      for item in self.contents:
+        item.cancelValue()
+
+  class STitle(QLabel):
+    def __init__(self, outer, text, *args):
+      self.outer = outer
+      super().__init__(text, *args)
+      self.setFont(self.outer.level1)
+
   def changeDict(self, d, params, val):
     setDict(d, params, val)
     self.buttonStateChange()
@@ -195,6 +250,11 @@ class Setting(QFrame):
       self.saveButton.setDisabled(False)
       self.cancelButton.setDisabled(False)
 
+  def adjustSize(self) -> None:
+    for section in self.sections:
+      section.adjustSize()
+    self.scroll_widget.adjustSize()
+      
   def __init__(self, *args):
     super().__init__(*args)
 
@@ -219,52 +279,81 @@ class Setting(QFrame):
     # 所有内容信息
     self.content = [
       {
-        "title": QLabel("下载设置"),
+        "title": Setting.STitle(self, "下载设置"),
         "options": 
         [
-          Setting.SPathSelect(self, "文件存放位置", ["spider", "save_dir_name"], lambda : scroll_widget.adjustSize()),
+          Setting.SPathSelect(self, "文件存放位置", ["spider", "save_dir_name"], self.adjustSize),
           Setting.SLineEdit(self, "请求超时(ms)", ["spider", "timeout"], True),
           Setting.SLineEdit(self, "最大请求次数", ["spider", "request_max_count"], True),
           Setting.SCheckBox(self, "MD5匹配", ["spider", "md5_match"]),
           Setting.SCheckBox(self, "校正数据库", ["spider", "clear"]),
           Setting.SCheckBox(self, "每次下载完成后显示新增文件", ["__main__", "main", "print_new_file"]),
           Setting.SCheckBox(self, "存放新增文件快捷方式", ["__main__", "main", "save_new_file"]),
-          Setting.SPathSelect(self, "快捷方式存放位置", ["__main__", "main", "save_as"], lambda : scroll_widget.adjustSize()),
-          Setting.SComboBox(self, "图片存放方式", ["spider", "image_by_folder"], self.base_config["spider"]["image_by_folder_options"])
+          Setting.SPathSelect(self, "新增文件快捷方式存放位置", ["__main__", "main", "save_as"], self.adjustSize),
+          Setting.SComboBox(self, "图片存放方式", ["spider", "image_by_folder"], self.base_config["spider"]["image_by_folder_options"]),
+          Setting.SDatabaseSelect(self, "数据库选择", ["spider", "database"]),
+          Setting.SLogEdit(self, "日志（不建议修改）", ["spider", "logs"])
         ]
       }, 
       {
-        "title": QLabel("校正设置"),
+        "title": Setting.STitle(self, "校正设置"),
         "options": 
         [
+          Setting.SLineEdit(self, "记录输出文件", ["__main__", "check", "output"]),
           Setting.SCheckBox(self, "校正数据库", ["__main__", "check", "revise"])
         ]
-      }, 
+      },
       {
-        "title": QLabel("数据库设置"),
+        "title": Setting.STitle(self, "迁移设置"),
         "options": 
         [
-          Setting.SDatabaseSelect(self, ["spider", "database"])
+          Setting.SLineEdit(self, "记录输出文件", ["__main__", "migrate", "output"]),
+          Setting.SDatabaseSelect(self, "源数据库选择", ["__main__", "migrate", "source"]),
+          Setting.SDatabaseSelect(self, "目标数据库选择", ["__main__", "migrate", "target"])
+        ]
+      }, 
+      {
+        "title": Setting.STitle(self, "数据库设置"),
+        "options": 
+        [
+          Setting.SCheckBox(self, "若数据库名不存在是否自动创建（仅限sqlite，mysql需手动创建）", ["database", "create"]),
+          Setting.SLogEdit(self, "日志（不建议修改）", ["database", "logs"])
         ]
       }
     ]
 
     # 设置滚动条中的布局
     layout_scroll = QVBoxLayout()
+    self.sections = []
     for part in self.content:
       # 添加title
+      section = QFrame()
+      self.sections.append(section)
+      layout_section = QVBoxLayout()
       layout_part = QHBoxLayout()
-      part["title"].setFont(self.level1)
       layout_part.addWidget(part["title"])
       # 添加重置按钮
       button = ResetButton()
       # layout_part.addSpacing(5)
       layout_part.addWidget(button)
       layout_part.addStretch(1)
-      layout_scroll.addLayout(layout_part)
+      layout_section.addLayout(layout_part)
+      layout_section.addSpacing(5)
       # 添加设置项
       for option in part["options"]:
-        layout_scroll.addWidget(option)
+        layout_section.addWidget(option)
+      section.setLayout(layout_section)
+      section.setStyleSheet(
+        """
+        .QFrame {
+          border-left-width: 2px;
+          border-left-style: solid;
+          border-left-color: black;
+          padding-left: 4px;
+        }
+        """
+      )
+      layout_scroll.addWidget(section)
       layout_scroll.addSpacing(10)
       # 设置撤销按钮功能，这里闭包的特性一定要注意一下，同时要用val占住第一个位置
       button.clicked.connect(
@@ -272,6 +361,11 @@ class Setting(QFrame):
         lambda val, _options = part["options"]:
           [one.cancelValue() for one in _options]
       )
+
+    # 功能设置
+    self.saveButton.clicked.connect(lambda val : self.save(False))
+    self.cancelButton.clicked.connect(lambda val : self.cancel(True))
+    self.resetButton.clicked.connect(lambda val : self.reset(True))
 
     # 设置功能按钮布局
     layout_function = QHBoxLayout()
@@ -355,15 +449,10 @@ class Setting(QFrame):
     layout_function.setSpacing(0)
     layout_function.setContentsMargins(0, 6, 0, 6)
 
-    # 功能设置
-    self.saveButton.clicked.connect(lambda val : self.save(False))
-    self.cancelButton.clicked.connect(lambda val : self.cancel(True))
-    self.resetButton.clicked.connect(lambda val : self.reset(True))
-
     # 最终布局设置
     layout_final = QVBoxLayout()
     scroll = QScrollArea()
-    scroll_widget = QFrame()
+    self.scroll_widget = scroll_widget = QFrame()
     scroll_widget.setLayout(layout_scroll)
     # 设置滚动区域的最小尺寸，因为在父亲上面设置了最小尺寸，所以这里就不用设置了
     # scroll.setMinimumSize(300, 400)
@@ -392,6 +481,12 @@ class Setting(QFrame):
       }
       """
     )
+    qds = QGraphicsDropShadowEffect()
+    qds.setOffset(0, 0)
+    qds.setColor(QColor(200, 200, 200))
+    qds.setBlurRadius(15)
+    function_widget.setGraphicsEffect(qds)
+    scroll_widget.setContentsMargins(8, 0, 0, 0)
     function_widget.setStyleSheet(
       """
       QFrame {
@@ -403,12 +498,6 @@ class Setting(QFrame):
       }
       """
     )
-    qds = QGraphicsDropShadowEffect()
-    qds.setOffset(0, 0)
-    qds.setColor(QColor(200, 200, 200))
-    qds.setBlurRadius(15)
-    function_widget.setGraphicsEffect(qds)
-    scroll_widget.setContentsMargins(8, 0, 0, 0)
     scroll.setStyleSheet(
       """
       QScrollArea {

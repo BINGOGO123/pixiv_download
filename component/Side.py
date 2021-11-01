@@ -124,4 +124,3 @@ class Side(QFrame):
         pressObj.setChecked(True)
       else:
         pressObj.setChecked(False)
-          

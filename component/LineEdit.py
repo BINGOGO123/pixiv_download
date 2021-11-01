@@ -55,19 +55,20 @@ class LineEdit(QFrame):
     self.edit.setStyleSheet(
       """
       QLineEdit {
+        background-color: rgb(245, 245, 245);
         border: none;
         padding: 3px 5px 3px 5px;
         border-width: 1px;
         border-style: solid;
-        border-color: white;
-        background-color: rgb(245, 245, 245);
+        border-color: rgb(245, 245, 245);
+        margin-right:5px;
       }
       QLineEdit:focus {
+        background-color: white;
         border-width: 1px;
         border-style: solid;
         border-color: gray;
         border-color: rgb(200, 200, 200);
-        background-color: white;
       }
       """
     )

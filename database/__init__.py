@@ -7,7 +7,7 @@ config = base_config[__name__]
 logger = logging.getLogger(__name__)
 
 # 初始化日志对象
-def initialLogger(logger, name, logs_dir, logger_level, file_level, stream_level):
+def initialLogger(logger, name, logs_dir, logger_level, file_level, stream_level, **args):
   # 如果不存在logs文件夹则创建
   if not os.path.exists(logs_dir):
     os.makedirs(logs_dir)

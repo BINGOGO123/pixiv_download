@@ -37,7 +37,8 @@ default_config = {
       "logs_dir": "logs/",
       "logger_level": "logging.DEBUG",
       "file_level": "logging.DEBUG",
-      "stream_level": "logging.INFO"
+      "stream_level": "logging.INFO",
+      "level_options": ["logging.DEBUG", "logging.INFO", "logging.WARNING", "logging.ERROR", "logging.CRITICAL"]
     }
   },
   "database": {
@@ -48,7 +49,8 @@ default_config = {
       "logs_dir": "logs/",
       "logger_level": "logging.DEBUG",
       "file_level": "logging.DEBUG",
-      "stream_level": "logging.INFO"
+      "stream_level": "logging.INFO",
+      "level_options": ["logging.DEBUG", "logging.INFO", "logging.WARNING", "logging.ERROR", "logging.CRITICAL"]
     },
     # pymysql连接数据库的选项可以在这里进行更改
     "db_connect_params":{
@@ -77,23 +79,33 @@ default_config = {
     # 给migrate.py的配置
     "migrate": {
       # 源数据库
-      # "source": {
-      #   "type": "mysql",
-      #   "params": {
-      #     "host": "localhost",
-      #     "port": "3306",
-      #     "user": "",
-      #     "password": "",
-      #     "db": ""
-      #   }
-      # },
+      "source": {
+        "type": "mysql",
+        "mysql": {
+          "host": "localhost",
+          "port": "3306",
+          "user": "",
+          "password": "",
+          "db": ""
+        },
+        "sqlite": {
+          "db": "pixiv_download"
+        }
+      },
       # 目标数据库
-      # "target": {
-      #   "type": "sqlite",
-      #   "params": {
-      #     "db": "pixiv_download"
-      #   }
-      # },
+      "target": {
+        "type": "sqlite",
+        "mysql": {
+          "host": "localhost",
+          "port": "3306",
+          "user": "",
+          "password": "",
+          "db": ""
+        },
+        "sqlite": {
+          "db": "pixiv_download"
+        }
+      },
       # 默认的输出文件
       "output": "migrate.txt"
     }

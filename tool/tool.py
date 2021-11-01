@@ -29,7 +29,7 @@ def get_md5(data:bytes):
   return md5.hexdigest()
 
 # 暂时没有用这里的这个方法，因为每个模块的日志格式可能不一样，所以应该各自可以高度自定义自己的日志格式，不应该用统一的模板
-def initialLogger(logger, name, logs_dir, logger_level, file_level, stream_level):
+def initialLogger(logger, name, logs_dir, logger_level, file_level, stream_level, **args):
   """
   格式化日志对象
   """

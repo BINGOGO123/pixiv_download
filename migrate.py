@@ -9,7 +9,7 @@ config = base_config[__name__]["migrate"]
 def get_database(params):
   package_name = "database.{}".format(params["type"])
   db = importlib.import_module(package_name)
-  return db.Db(**params["params"])
+  return db.Db(**params[params["type"]])
 
 if __name__ == "__main__":
   if len(sys.argv) > 1:
