@@ -5,7 +5,8 @@ from PyQt6 import QtCore
 from PyQt6.QtGui import QColor, QFont, QIcon, QKeySequence
 from PyQt6.QtWidgets import QCheckBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
 import copy
-import json
+from tool.tool import saveJson
+from .Font import Font
 
 from tool.tool import cover, getDict, setDict
 from config import base_config, default_config
@@ -24,7 +25,7 @@ class Setting(QFrame):
         name, 
         getDict(self.outer.base_config, params), 
         lambda val : (self.outer.changeDict(self.outer.base_config, params, val), inform()),
-        self.outer.level4, 
+        Font.LEVEL4,
         *args
       )
       self.params = params
@@ -42,7 +43,7 @@ class Setting(QFrame):
         getDict(self.outer.base_config, params),
         valList,
         lambda val: (self.outer.changeDict(self.outer.base_config, params, val), inform()),
-        self.outer.level4,
+        Font.LEVEL4,
         *args
       )
     def resetDefaultValue(self):
@@ -58,7 +59,7 @@ class Setting(QFrame):
         name,
         getDict(self.outer.base_config, params),
         lambda val : (self.outer.changeDict(self.outer.base_config, params, val), inform()),
-        self.outer.level4,
+        Font.LEVEL4,
         number,
         letter,
         password,
@@ -77,7 +78,7 @@ class Setting(QFrame):
         name,
         getDict(self.outer.base_config, params),
         lambda val : (self.outer.changeDict(self.outer.base_config, params, val), inform()),
-        self.outer.level4,
+        Font.LEVEL4,
         *args
       )
     def resetDefaultValue(self):
@@ -97,7 +98,7 @@ class Setting(QFrame):
       section = {}
       section["title"] = QCheckBox()
       section["title"].setText("sqlite")
-      section["title"].setFont(self.outer.level3)
+      section["title"].setFont(Font.LEVEL3)
       section["content"] = [
         self.outer.SLineEdit(self.outer, "database", params + ["sqlite", "db"])
       ]
@@ -107,7 +108,7 @@ class Setting(QFrame):
       section = {}
       section["title"] = QCheckBox()
       section["title"].setText("mysql")
-      section["title"].setFont(self.outer.level3)
+      section["title"].setFont(Font.LEVEL3)
       section["content"] = [
         Setting.SLineEdit(self.outer, "host", params + ["mysql", "host"], True, True),
         Setting.SLineEdit(self.outer, "port", params + ["mysql", "port"], True),
@@ -148,7 +149,7 @@ class Setting(QFrame):
       hbox.setSpacing(10)
       hbox.setContentsMargins(0, 0, 0, 0)
       title = QLabel(text)
-      title.setFont(self.outer.level4)
+      title.setFont(Font.LEVEL4)
       vbox.addWidget(title)
       vbox.addLayout(hbox)
       vbox.setContentsMargins(0, 0, 0, 0)
@@ -211,7 +212,7 @@ class Setting(QFrame):
       self.vFrame = vFrame = QFrame()
       vbox = QVBoxLayout()
       title = QLabel(text)
-      title.setFont(self.outer.level2)
+      title.setFont(Font.LEVEL2)
       vbox.addWidget(title)
       for item in self.contents:
         vbox.addWidget(item)
@@ -234,23 +235,32 @@ class Setting(QFrame):
     def __init__(self, outer, text, *args):
       self.outer = outer
       super().__init__(text, *args)
-      self.setFont(self.outer.level1)
+      self.setFont(Font.LEVEL1)
 
   def changeDict(self, d, params, val):
     setDict(d, params, val)
     self.buttonStateChange()
 
+  @property
+  def changed(self):
+    return self._changed
+  @changed.setter
+  def changed(self, new_val):
+    if new_val:
+      self.saveButton.setDisabled(False)
+      self.cancelButton.setDisabled(False)
+    else:
+      self.saveButton.setDisabled(True)
+      self.cancelButton.setDisabled(True)
+    self._changed = new_val
+
   def buttonStateChange(self):
     if self.base_config == base_config:
       self.changed = False
-      self.saveButton.setDisabled(True)
-      self.cancelButton.setDisabled(True)
     else:
       self.changed = True
-      self.saveButton.setDisabled(False)
-      self.cancelButton.setDisabled(False)
 
-  def adjustSize(self) -> None:
+  def adjustSize(self):
     for section in self.sections:
       section.adjustSize()
     self.scroll_widget.adjustSize()
@@ -260,21 +270,17 @@ class Setting(QFrame):
 
     # 对象内部存储设置信息的副本
     self.base_config = copy.deepcopy(base_config)
+
+    self.initUI()
+    
     # 表示各项设置是否改变过
     self.changed = False
 
-    self.initUI()
-
   def initUI(self):
-    # 字体信息
-    self.level1 = QFont("宋体", 14, QFont.Weight.Bold)
-    self.level2 = QFont("宋体", 12, QFont.Weight.Bold)
-    self.level3 = QFont("宋体", 10, QFont.Weight.Bold)
-    self.level4 = QFont("宋体", 10)
 
     # 功能按钮
     self.saveButton = QPushButton(" 保存")
-    self.cancelButton = QPushButton(" 撤销")
+    self.cancelButton = QPushButton(" 放弃")
     self.resetButton = QPushButton(" 重置")
     # 所有内容信息
     self.content = [
@@ -316,7 +322,7 @@ class Setting(QFrame):
         "title": Setting.STitle(self, "数据库设置"),
         "options": 
         [
-          Setting.SCheckBox(self, "若数据库名不存在是否自动创建（仅限sqlite，mysql需手动创建）", ["database", "create"]),
+          Setting.SCheckBox(self, "若数据库名不存在是否自动创建（仅限mysql）", ["database", "create"]),
           Setting.SLogEdit(self, "日志（不建议修改）", ["database", "logs"])
         ]
       }
@@ -355,7 +361,7 @@ class Setting(QFrame):
       )
       layout_scroll.addWidget(section)
       layout_scroll.addSpacing(10)
-      # 设置撤销按钮功能，这里闭包的特性一定要注意一下，同时要用val占住第一个位置
+      # 设置放弃按钮功能，这里闭包的特性一定要注意一下，同时要用val占住第一个位置
       button.clicked.connect(
         # 由于要执行循环，所以用列表推导式来单行实现，实际上并不需要该方法的返回值
         lambda val, _options = part["options"]:
@@ -401,10 +407,10 @@ class Setting(QFrame):
         border-color: gray;
       }
       QPushButton:hover {
-        background-color: rgb(200, 200, 200)
+        background-color: rgb(200, 200, 200);
       }
       QPushButton:pressed {
-        background-color: rgb(150, 150, 150)
+        background-color: rgb(150, 150, 150);
       }
       """
     )
@@ -422,19 +428,19 @@ class Setting(QFrame):
         border-left: none;
       }
       QPushButton:hover {
-        background-color: rgb(200, 200, 200)
+        background-color: rgb(200, 200, 200);
       }
       QPushButton:pressed {
-        background-color: rgb(150, 150, 150)
+        background-color: rgb(150, 150, 150);
       }
       """
     )
     self.saveButton.setFixedWidth(100)
     self.cancelButton.setFixedWidth(100)
     self.resetButton.setFixedWidth(100)
-    self.saveButton.setFont(self.level3)
-    self.cancelButton.setFont(self.level3)
-    self.resetButton.setFont(self.level3)
+    self.saveButton.setFont(Font.LEVEL4)
+    self.cancelButton.setFont(Font.LEVEL4)
+    self.resetButton.setFont(Font.LEVEL4)
     saveIcon = QIcon("icons/save.svg")
     self.saveButton.setIcon(saveIcon)
     cancelIcon = QIcon("icons/cancel.svg")
@@ -543,8 +549,11 @@ class Setting(QFrame):
       box = QMessageBox(self)
       box.setText("是否保存修改的设置信息？")
       box.setWindowTitle("Pixiv下载工具")
+      box.setFont(Font.LEVEL3)
       yesButton = box.addButton("是(Y)", QMessageBox.ButtonRole.AcceptRole)
       noButton = box.addButton("否(N)", QMessageBox.ButtonRole.RejectRole)
+      yesButton.setFont(Font.LEVEL4)
+      noButton.setFont(Font.LEVEL4)
       box.setDefaultButton(yesButton)
       yesButton.setShortcut("Y")
       noButton.setShortcut("N")
@@ -552,7 +561,6 @@ class Setting(QFrame):
         """
         QLabel {
           color: rgb(0, 51, 153);
-          font-size: 16px;
         }
         """
       )
@@ -563,20 +571,19 @@ class Setting(QFrame):
       execute = True
     if execute:
       try:
-        f = open(os.path.abspath("config.json"), "w", encoding = "utf8")
-        f.write(json.dumps(self.base_config, sort_keys = True, indent = 2))
-        f.close()
+        saveJson(self.base_config, os.path.abspath("config.json"))
       except Exception as e:
         box = QMessageBox(self)
         box.setText(f"保存失败: {str(e)}")
         box.setWindowTitle("Pixiv下载工具")
+        box.setFont(Font.LEVEL3)
         okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
+        okButton.setFont(Font.LEVEL4)
         box.setDefaultButton(okButton)
         box.setStyleSheet(
           """
           QLabel {
             color: red;
-            font-size: 16px;
           }
           """
         )
@@ -589,13 +596,14 @@ class Setting(QFrame):
         box = QMessageBox(self)
         box.setText(f"配置文件保存成功")
         box.setWindowTitle("Pixiv下载工具")
+        box.setFont(Font.LEVEL3)
         okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
+        okButton.setFont(Font.LEVEL4)
         box.setDefaultButton(okButton)
         box.setStyleSheet(
           """
           QLabel {
             color: rgb(0, 51, 153);
-            font-size: 16px;
           }
           """
         )
@@ -604,15 +612,18 @@ class Setting(QFrame):
     else:
       return False
 
-  # 撤销功能
+  # 放弃功能
   def cancel(self, alert = True):
     execute = False
     if alert:
       box = QMessageBox(self)
-      box.setText("是否撤销当前所有修改？")
+      box.setText("是否放弃当前所有修改？")
       box.setWindowTitle("Pixiv下载工具")
+      box.setFont(Font.LEVEL3)
       yesButton = box.addButton("是(Y)", QMessageBox.ButtonRole.AcceptRole)
       noButton = box.addButton("否(N)", QMessageBox.ButtonRole.RejectRole)
+      yesButton.setFont(Font.LEVEL4)
+      noButton.setFont(Font.LEVEL4)
       box.setDefaultButton(yesButton)
       yesButton.setShortcut("Y")
       noButton.setShortcut("N")
@@ -620,7 +631,6 @@ class Setting(QFrame):
         """
         QLabel {
           color: rgb(0, 51, 153);
-          font-size: 16px;
         }
         """
       )
@@ -633,7 +643,7 @@ class Setting(QFrame):
       for part in self.content:
         for option in part["options"]:
           option.cancelValue()
-      # 讲道理上面已经撤销了所有设置，无需下面的操作了
+      # 讲道理上面已经放弃了所有设置，无需下面的操作了
       # self.base_config = copy.deepcopy(base_config)
       # self.buttonStateChange()
       return True
@@ -647,8 +657,11 @@ class Setting(QFrame):
       box = QMessageBox(self)
       box.setText("是否重置所有配置信息？")
       box.setWindowTitle("Pixiv下载工具")
+      box.setFont(Font.LEVEL3)
       yesButton = box.addButton("是(Y)", QMessageBox.ButtonRole.AcceptRole)
       noButton = box.addButton("否(N)", QMessageBox.ButtonRole.RejectRole)
+      yesButton.setFont(Font.LEVEL4)
+      noButton.setFont(Font.LEVEL4)
       box.setDefaultButton(yesButton)
       yesButton.setShortcut("Y")
       noButton.setShortcut("N")
@@ -656,7 +669,6 @@ class Setting(QFrame):
         """
         QLabel {
           color: rgb(0, 51, 153);
-          font-size: 16px;
         }
         """
       )
@@ -683,9 +695,13 @@ class Setting(QFrame):
       box = QMessageBox(self)
       box.setText("当前修改尚未保存，是否保存？")
       box.setWindowTitle("Pixiv下载工具")
+      box.setFont(Font.LEVEL3)
       saveButton = box.addButton("保存(S)", QMessageBox.ButtonRole.AcceptRole)
-      cancelButton = box.addButton("不保存(N)", QMessageBox.ButtonRole.DestructiveRole)
+      cancelButton = box.addButton("放弃(N)", QMessageBox.ButtonRole.DestructiveRole)
       quitButton = box.addButton("取消", QMessageBox.ButtonRole.RejectRole)
+      saveButton.setFont(Font.LEVEL4)
+      cancelButton.setFont(Font.LEVEL4)
+      quitButton.setFont(Font.LEVEL4)
       box.setDefaultButton(saveButton)
 
       saveButton.setShortcut("S")
@@ -694,7 +710,6 @@ class Setting(QFrame):
         """
         QLabel {
           color: rgb(0, 51, 153);
-          font-size: 16px;
         }
         """
       )

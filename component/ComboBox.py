@@ -2,6 +2,12 @@
 
 from PyQt6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel
 
+
+class QComboBox(QComboBox):
+  # 禁用鼠标滚动更改值
+  def wheelEvent(self, e):
+    pass
+
 class ComboBox(QFrame):
 
   def __init__(self, name, val, valList, inform, font, *args):
@@ -20,7 +26,7 @@ class ComboBox(QFrame):
     layout.addWidget(label)
     self.combo = QComboBox()
     for item in self.valList:
-        self.combo.addItem(item)
+      self.combo.addItem(item)
     self.combo.setCurrentText(self.val)
     self.combo.setFont(self.font)
     layout.addWidget(self.combo)

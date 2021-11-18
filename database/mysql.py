@@ -1,11 +1,13 @@
 import pymysql
 from dbutils.pooled_db import PooledDB
 from pymysql.converters import escape_string
-from . import config
+from config import base_config
+from . import module_name
 from . import logger
 from tool.tool import cover
 from .err import ConnectException
 from .AbstractDb import AbstractDb
+import copy
 
 class Db(AbstractDb):
   def __init__(self, host, port, user, password, db):
@@ -15,6 +17,8 @@ class Db(AbstractDb):
     若连接失败，抛出database.err.ConnectionException
     """
     logger.debug("Db(host={}, port={}, user={}, password={}, db={})".format(host, port, user, password, db))
+    self.config = copy.deepcopy(base_config[module_name])
+    logger.debug("config = {}".format(self.config))
     port = int(port)
     db_connect_params = {
       "creator": pymysql,  # 使用链接数据库的模块
@@ -35,7 +39,7 @@ class Db(AbstractDb):
       "charset": 'utf8mb4' # 4字节编码utf8
     }
     # 根据config配置中的连接配置覆盖
-    db_connect_params_config = config.get("db_connect_params") if config.get("db_connect_params") != None else {}
+    db_connect_params_config = self.config.get("db_connect_params") if self.config.get("db_connect_params") != None else {}
     cover(db_connect_params, db_connect_params_config)
     try:
       self.pool = PooledDB(
@@ -47,7 +51,7 @@ class Db(AbstractDb):
         **db_connect_params)
     except pymysql.err.OperationalError as e:
       # 表示数据库能连接，但是库名不存在
-      if e.args[0] == 1049 and config.get("create") == True:
+      if e.args[0] == 1049 and self.config.get("create") == True:
         # 在下面处理
         pass
       else:

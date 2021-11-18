@@ -4,6 +4,8 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QColor, QIcon
 from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QPushButton, QVBoxLayout
+from .Font import Font
+from .Account import Account
 
 class Side(QFrame):
 
@@ -22,7 +24,7 @@ class Side(QFrame):
     settingButton = QPushButton(" 设置")
 
     # 将所有的按键对象全部存储在本对象中
-    self.buttonList = [userButton, downloadButton, viewButton, aboutButton, settingButton]
+    self.buttonList = [userButton, downloadButton, viewButton, settingButton, aboutButton]
 
     # 设置为checkable模式
     downloadButton.setCheckable(True)
@@ -32,9 +34,6 @@ class Side(QFrame):
     aboutButton.setCheckable(True)
 
     # 设置图标
-    userIcon = QIcon("icons/user.svg")
-    userButton.setIcon(userIcon)
-    userButton.setIconSize(QSize(60, 60))
     settingIcon = QIcon("icons/setting.svg")
     settingButton.setIcon(settingIcon)
     downloadIcon = QIcon("icons/download.svg")
@@ -49,23 +48,19 @@ class Side(QFrame):
 
     # 设置布局
     vbox = QVBoxLayout()
-    vbox.addWidget(userButton)
-    vbox.addWidget(downloadButton)
-    vbox.addWidget(viewButton)
-    vbox.addWidget(aboutButton)
-    vbox.addWidget(settingButton)
+    for button in self.buttonList:
+      vbox.addWidget(button)
     vbox.addStretch(1)
     vbox.setSpacing(0)
     self.setLayout(vbox)
 
     # 布局更改
     vbox.setContentsMargins(0, 0, 0, 0)
+    self.setContentsMargins(0, 0, 0, 0)
 
     # 设置每个按钮的点击事件
     for button in self.buttonList:
       button.clicked[bool].connect(self.pressButton)
-    # 开始时点击一下userButton
-    userButton.click()
 
     # 设置style
     buttonStyle = """
@@ -76,10 +71,7 @@ class Side(QFrame):
       border-bottom-width: 1px;
       border-bottom-style: solid;
       border-bottom-color: rgb(220, 220, 220);
-      font-size: 14px;
-      font-family: SimSong;
       border: none;
-      font-weight: bold;
     }
     QPushButton:hover {
       background-color: rgb(230, 230, 230);
@@ -93,6 +85,11 @@ class Side(QFrame):
     settingButton.setStyleSheet(buttonStyle)
     userButton.setStyleSheet(buttonStyle)
     aboutButton.setStyleSheet(buttonStyle)
+    downloadButton.setFont(Font.LEVEL3)
+    viewButton.setFont(Font.LEVEL3)
+    settingButton.setFont(Font.LEVEL3)
+    userButton.setFont(Font.LEVEL3)
+    aboutButton.setFont(Font.LEVEL3)
     downloadButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
     viewButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
     settingButton.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
@@ -124,3 +121,25 @@ class Side(QFrame):
         pressObj.setChecked(True)
       else:
         pressObj.setChecked(False)
+
+  # 点击val编号的按钮从而切换视图
+  def changeView(self, val):
+    if val >= len(self.buttonList) or val < 0:
+      return
+    self.buttonList[val].click()
+
+  # 更改状态
+  def stateChange(self, state):
+    if state == Account.State.NONE or state == Account.State.UNKNOWN:
+      userIcon = QIcon("icons/user.svg")
+    elif state == Account.State.ERROR or state == Account.State.NETWORK_ANOMALY:
+      userIcon = QIcon("icons/cry.svg")
+    elif state == Account.State.OK:
+      userIcon = QIcon("icons/smile.svg")
+    elif state == Account.State.QUERY:
+      userIcon = QIcon("icons/query.svg")
+    else:
+      userIcon = QIcon("icons/user.svg")
+    self.buttonList[0].setIcon(userIcon)
+    self.buttonList[0].setIconSize(QSize(60, 60))
+      

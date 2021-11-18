@@ -3,8 +3,8 @@ import os
 import datetime
 from config import base_config
 
-config = base_config[__name__]
-logger = logging.getLogger(__name__)
+module_name = __name__
+logger = logging.getLogger(module_name)
 
 # 初始化日志对象
 def initialLogger(logger, name, logs_dir, logger_level, file_level, stream_level, **args):
@@ -23,5 +23,4 @@ def initialLogger(logger, name, logs_dir, logger_level, file_level, stream_level
   logger.addHandler(handler1)
   logger.addHandler(handler2)
 
-initialLogger(logger, __name__, **config.get("logs"))
-logger.debug("config = {}".format(config))
+initialLogger(logger, module_name, **base_config[module_name].get("logs"))

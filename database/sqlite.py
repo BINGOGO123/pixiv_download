@@ -1,7 +1,9 @@
 import sqlite3
-from . import config
+from config import base_config
+from . import module_name
 from . import logger
 from .AbstractDb import AbstractDb
+import copy
 
 class Db(AbstractDb):
   def __init__(self, db):
@@ -9,6 +11,8 @@ class Db(AbstractDb):
     一次连接，没用连接池
     """
     logger.debug("Db(db={})".format(db))
+    self.config = copy.deepcopy(base_config[module_name])
+    logger.debug("config = {}".format(self.config))
     if db.split(".")[-1] != "db":
       db += ".db"
     self.db = sqlite3.connect(db)

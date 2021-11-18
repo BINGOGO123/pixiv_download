@@ -2,3 +2,6 @@
 
 class InitException(Exception):
   pass
+
+class NetworkException(Exception):
+  pass

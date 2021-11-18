@@ -38,23 +38,26 @@ class MainWindow(QMainWindow):
     widget = QWidget()
     hbox = QHBoxLayout()
 
+    # 左侧边栏
+    self.side = Side(self.changeView)
+    # 设置固定宽度110
+    self.side.setFixedWidth(110)
+
     # 右边区域
-    account = Account()
+    account = Account(self.side.stateChange)
     download = Download()
     view = View()
-    about = About()
     setting = Setting()
-    self.viewList = [account, download, view, about, setting]
+    about = About()
+    self.viewList = [account, download, view, setting, about]
     for right in self.viewList:
       right.setHidden(True)
 
-    # 左侧边栏，必须先设置右边再设置左边，因为一开始side会自动点击一个按钮
-    side = Side(self.changeView)
-    # 设置固定宽度110
-    side.setFixedWidth(110)
+    # 选择第一个视图
+    self.side.changeView(0)
 
     # 设置布局
-    hbox.addWidget(side)
+    hbox.addWidget(self.side)
     for right in self.viewList:
       hbox.addWidget(right)
     widget.setLayout(hbox)
@@ -88,3 +91,4 @@ class MainWindow(QMainWindow):
           break
     else:
         event.accept()
+

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import datetime
@@ -102,3 +103,13 @@ def getDict(d, params):
   for item in params:
     result = result[item]
   return result
+
+def saveJson(d, target):
+  """
+  将d以可读json格式保存至target中
+
+  可能会抛出异常
+  """
+  f = open(target, "w", encoding = "utf8")
+  f.write(json.dumps(d, sort_keys = True, indent = 2))
+  f.close()

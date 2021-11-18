@@ -7,28 +7,16 @@ from datetime import datetime
 import importlib
 from bs4 import BeautifulSoup
 from tool.tool import get_md5
-from . import config
+from config import base_config
 from . import logger
-from .err import InitException
+from . import module_name
+from .err import InitException, NetworkException
+import copy
 
 # 用以爬虫的配置
 # config = base_config["spider"]
 
 class Spider:
-  __headers = {
-    "cookie": config["cookie"],
-    "accept": "application/json",
-    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-    # 必须加上下面这一项才能正常下载图片，否则会403forbbiden
-    "referer": "https://www.pixiv.net/",
-    "sec-ch-ua": '" Not;A Brand";v="99", "Microsoft Edge";v="91", "Chromium";v="91"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64",
-    "x-user-id": config["your_uid"],
-  }
   __routes = {
     "bookmarks/artworks": "download_bookmarks_artworks",
     "bookmarks/novels": "download_bookmarks_novels",
@@ -47,18 +35,36 @@ class Spider:
     出现其他问题导致无法继续，抛出spider.err.InitException
     """
     logger.info("Spider()")
+    # 存储一份副本
+    self.config = copy.deepcopy(base_config[module_name])
+    logger.debug("config = {}".format(self.config))
+    # 每一个对象拥有单独的header
+    __headers = {
+      "cookie": self.config["cookie"],
+      "accept": "application/json",
+      "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+      # 必须加上下面这一项才能正常下载图片，否则会403forbbiden
+      "referer": "https://www.pixiv.net/",
+      "sec-ch-ua": '" Not;A Brand";v="99", "Microsoft Edge";v="91", "Chromium";v="91"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64",
+      # "x-user-id": self.config["your_uid"],
+    }
     self.s = requests.session()
-    self.s.headers.update(self.__headers)
+    self.s.headers.update(__headers)
     self.start_time = datetime.now()
     # 根据config选择使用的数据库
-    package_name = "database.{}".format(config["database"]["type"])
+    package_name = "database.{}".format(self.config["database"]["type"])
     try:
       db = importlib.import_module(package_name)
     except ModuleNotFoundError:
       logger.exception("模块 {} 不存在".format(package_name))
       raise
     # 这里可能有连接失败的异常，但是我们不需要处理，直接raise即可
-    self.database = db.Db(**config["database"][config["database"]["type"]])
+    self.database = db.Db(**self.config["database"][self.config["database"]["type"]])
     if self.database.execute("""
       create table if not exists file(
         url varchar(1000) not null,
@@ -68,8 +74,8 @@ class Spider:
       );
       """) == False:
       raise InitException("file表创建失败")
-    if not os.path.exists(config["save_dir_name"]):
-      os.makedirs(config["save_dir_name"])
+    if not os.path.exists(self.config["save_dir_name"]):
+      os.makedirs(self.config["save_dir_name"])
 
   def __del__(self):
     """
@@ -83,8 +89,8 @@ class Spider:
     """
     logger.debug("get_response(url={}, kwargs={})".format(url, kwargs))
     if kwargs.get("timeout") == None:
-      kwargs["timeout"] = int(config["timeout"])
-    count, max_count = 0, int(config["request_max_count"])
+      kwargs["timeout"] = int(self.config["timeout"])
+    count, max_count = 0, int(self.config["request_max_count"])
     while True:
       try:
         res = self.s.get(url, **kwargs)
@@ -131,7 +137,7 @@ class Spider:
     """
     logger.info("download(uid={}, route={})".format(uid, route))
     # 本次下载存储的文件路径
-    filepath = os.path.join(config["save_dir_name"], uid, route)
+    filepath = os.path.join(self.config["save_dir_name"], uid, route)
     if not os.path.exists(filepath):
       os.makedirs(filepath)
       logger.info("存储路径不存在，创建 path={}".format(filepath))
@@ -231,7 +237,7 @@ class Spider:
     # 生成文件基础路径
     name = title + "_" + pid
     name = self.__regular.sub("#", name)
-    if config.get("image_by_folder") == "all" or config.get("image_by_folder") == "multiple" and len(image_urls) > 1:
+    if self.config.get("image_by_folder") == "all" or self.config.get("image_by_folder") == "multiple" and len(image_urls) > 1:
       base_path = os.path.join(filepath, name + "/")
       if not os.path.exists(base_path):
         os.makedirs(base_path)
@@ -252,7 +258,7 @@ class Spider:
       # 查询该路径是否下载了该image_url图片
       ret = self.database.escape_execute("select md5 from file where storage_path = {} and url = {}", storage_path, image_url)
       if ret != False and len(ret) > 0 and os.path.exists(storage_path):
-        if config.get("md5_match") == True:
+        if self.config.get("md5_match") == True:
           if self.compare_md5(storage_path, ret[0][0]) != False:
             logger.info("已存在且md5匹配，跳过")
             successful += 1
@@ -265,7 +271,7 @@ class Spider:
       ret = self.database.escape_execute("select storage_path,md5 from file where url = {} and storage_path != {}", image_url, storage_path)
       if ret != False:
         for one in ret:
-          if config.get("md5_match") == True:
+          if self.config.get("md5_match") == True:
             content = self.compare_md5(one[0], one[1])
           else:
             content = self.compare_md5(one[0], "")
@@ -274,7 +280,7 @@ class Spider:
             break
           else:
             # 此时说明文件不存在或者文件的md5与数据库的md5不吻合
-            if config.get("clear") == True:
+            if self.config.get("clear") == True:
               self.database.escape_execute("delete from file where storage_path = {}", one[0])
         else:
           res = self.get_response(image_url)
@@ -474,7 +480,7 @@ class Spider:
     # 查询该路径是否下载了该url的小说
     ret = self.database.escape_execute("select md5 from file where storage_path = {} and url = {}", storage_path, url)
     if ret != False and len(ret) > 0 and os.path.exists(storage_path):
-      if config.get("md5_match") == True:
+      if self.config.get("md5_match") == True:
         if self.compare_md5(storage_path, ret[0][0]) != False:
           logger.info("已存在且md5匹配，跳过")
           return True
@@ -485,7 +491,7 @@ class Spider:
     ret = self.database.escape_execute("select storage_path,md5 from file where url = {} and storage_path != {}", url, storage_path)
     if ret != False:
       for one in ret:
-        if config.get("md5_match") == True:
+        if self.config.get("md5_match") == True:
           content = self.compare_md5(one[0], one[1])
         else:
           content = self.compare_md5(one[0], "")
@@ -494,7 +500,7 @@ class Spider:
           break
         else:
           # 此时说明文件不存在或者文件的md5与数据库的md5不吻合
-          if config.get("clear") == True:
+          if self.config.get("clear") == True:
             self.database.escape_execute("delete from file where storage_path = {}", one[0])
       else:
         res = self.get_response(url)
@@ -550,3 +556,22 @@ class Spider:
     返回Spider对象的建立时间
     """
     return self.start_time
+
+  def test(self):
+    """
+    测试当前用户是否可用
+    """
+    logger.info("test()")
+    url = "https://www.pixiv.net/ajax/user/extra?lang=zh"
+    ret = True
+    res = self.get_response(url)
+    if res == False:
+      ret = False
+    else:
+      try:
+        res.json()
+      except Exception as e:
+        ret = False
+    logger.info("ret = {}".format(ret))
+    return ret
+    

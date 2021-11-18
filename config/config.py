@@ -3,7 +3,8 @@ default_config = {
   "spider": {
     # 路径可以为相对路径或者绝对路径可以用\或者/
     "save_dir_name": "downloaded/",
-    "your_uid": "",
+    # 现在发现这一项不需要，只要有COOKIE就可以了
+    # "your_uid": "",
     "cookie": "",
     # 该项字符串必须为数字组成
     "timeout": "20",
@@ -42,7 +43,8 @@ default_config = {
     }
   },
   "database": {
-    # 当数据库不存在时是否创建，仅对pymysql有效
+    # 当数据库不存在时是否创建，仅对mysql有效，sqlite必然会自动创建
+    # 另外当表不存在时都会自动创建
     "create": True,
     "logs": {
       # 路径可以为相对路径或者绝对路径可以用\或者/
