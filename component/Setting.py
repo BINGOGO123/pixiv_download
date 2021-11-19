@@ -2,8 +2,8 @@
 
 import os
 from PyQt6 import QtCore
-from PyQt6.QtGui import QColor, QFont, QIcon, QKeySequence
-from PyQt6.QtWidgets import QCheckBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PyQt6.QtGui import QColor, QIcon
+from PyQt6.QtWidgets import QCheckBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
 import copy
 from tool.tool import saveJson
 from .Font import Font
@@ -21,18 +21,25 @@ class Setting(QFrame):
   class SCheckBox(CheckBox):
     def __init__(self, outer, name, params, inform = lambda : 1, *args):
       self.outer = outer
+      self.params = params
       super().__init__(
         name, 
-        getDict(self.outer.base_config, params), 
-        lambda val : (self.outer.changeDict(self.outer.base_config, params, val), inform()),
+        getDict(base_config, self.params), 
+        lambda val: (self.outer.settingChanged(), inform()),
         Font.LEVEL4,
         *args
       )
-      self.params = params
     def resetDefaultValue(self):
       self.setValue(getDict(default_config, self.params))
     def cancelValue(self):
       self.setValue(getDict(base_config, self.params))
+    # 是否与base_config有差异，应该与save的逻辑相同，即changed()=False则save()无变化，反之changed()=True则save()有变化
+    def changed(self):
+      if self.getValue() == getDict(base_config, self.params):
+        return False
+      return True
+    def save(self):
+      setDict(base_config, self.params, self.getValue())
 
   class SComboBox(ComboBox):
     def __init__(self, outer, name, params, valList, inform = lambda : 1, *args):
@@ -40,9 +47,9 @@ class Setting(QFrame):
       self.params = params
       super().__init__(
         name,
-        getDict(self.outer.base_config, params),
+        getDict(base_config, self.params),
         valList,
-        lambda val: (self.outer.changeDict(self.outer.base_config, params, val), inform()),
+        lambda val: (self.outer.settingChanged(), inform()),
         Font.LEVEL4,
         *args
       )
@@ -50,6 +57,13 @@ class Setting(QFrame):
       self.setValue(getDict(default_config, self.params))
     def cancelValue(self):
       self.setValue(getDict(base_config, self.params))
+    # 是否与base_config有差异，应该与save的逻辑相同，即changed()=False则save()无变化，反之changed()=True则save()有变化
+    def changed(self):
+      if self.getValue() == getDict(base_config, self.params):
+        return False
+      return True
+    def save(self):
+      setDict(base_config, self.params, self.getValue())
     
   class SLineEdit(LineEdit):
     def __init__(self, outer, name, params, number = False, letter = False, password = False, inform = lambda : 1, *args):
@@ -57,8 +71,8 @@ class Setting(QFrame):
       self.params = params
       super().__init__(
         name,
-        getDict(self.outer.base_config, params),
-        lambda val : (self.outer.changeDict(self.outer.base_config, params, val), inform()),
+        getDict(base_config, self.params),
+        lambda val: (self.outer.settingChanged(), inform()),
         Font.LEVEL4,
         number,
         letter,
@@ -69,6 +83,13 @@ class Setting(QFrame):
       self.setValue(getDict(default_config, self.params))
     def cancelValue(self):
       self.setValue(getDict(base_config, self.params))
+    # 是否与base_config有差异，应该与save的逻辑相同，即changed()=False则save()无变化，反之changed()=True则save()有变化
+    def changed(self):
+      if self.getValue() == getDict(base_config, self.params):
+        return False
+      return True
+    def save(self):
+      setDict(base_config, self.params, self.getValue())
 
   class SPathSelect(PathSelect):
     def __init__(self, outer, name, params, inform = lambda : 1, *args):
@@ -76,8 +97,8 @@ class Setting(QFrame):
       self.params = params
       super().__init__(
         name,
-        getDict(self.outer.base_config, params),
-        lambda val : (self.outer.changeDict(self.outer.base_config, params, val), inform()),
+        getDict(base_config, self.params),
+        lambda val: (self.outer.settingChanged(), inform()),
         Font.LEVEL4,
         *args
       )
@@ -85,6 +106,13 @@ class Setting(QFrame):
       self.setValue(getDict(default_config, self.params))
     def cancelValue(self):
       self.setValue(getDict(base_config, self.params))
+    # 是否与base_config有差异，应该与save的逻辑相同，即changed()=False则save()无变化，反之changed()=True则save()有变化
+    def changed(self):
+      if self.getValue() == getDict(base_config, self.params):
+        return False
+      return True
+    def save(self):
+      setDict(base_config, self.params, self.getValue())
     
   class SDatabaseSelect(QFrame):
     def __init__(self, outer, text, params, *args):
@@ -100,7 +128,7 @@ class Setting(QFrame):
       section["title"].setText("sqlite")
       section["title"].setFont(Font.LEVEL3)
       section["content"] = [
-        self.outer.SLineEdit(self.outer, "database", params + ["sqlite", "db"])
+        Setting.SLineEdit(self.outer, "database", self.params + ["sqlite", "db"])
       ]
       self.widgets.append(section)
 
@@ -110,11 +138,11 @@ class Setting(QFrame):
       section["title"].setText("mysql")
       section["title"].setFont(Font.LEVEL3)
       section["content"] = [
-        Setting.SLineEdit(self.outer, "host", params + ["mysql", "host"], True, True),
-        Setting.SLineEdit(self.outer, "port", params + ["mysql", "port"], True),
-        Setting.SLineEdit(self.outer, "user", params + ["mysql", "user"], True, True),
-        Setting.SLineEdit(self.outer, "password", params + ["mysql", "password"], True, True, True),
-        Setting.SLineEdit(self.outer, "database", params + ["mysql", "db"], True, True)
+        Setting.SLineEdit(self.outer, "host", self.params + ["mysql", "host"], True, True),
+        Setting.SLineEdit(self.outer, "port", self.params + ["mysql", "port"], True),
+        Setting.SLineEdit(self.outer, "user", self.params + ["mysql", "user"], True, True),
+        Setting.SLineEdit(self.outer, "password", self.params + ["mysql", "password"], True, True, True),
+        Setting.SLineEdit(self.outer, "database", self.params + ["mysql", "db"], True, True)
       ]
       self.widgets.append(section)
 
@@ -155,16 +183,15 @@ class Setting(QFrame):
       vbox.setContentsMargins(0, 0, 0, 0)
       self.setLayout(vbox)
 
-      # 这里注意闭包的特性，同时由于connect会传参，因此需要用val占住第一个参数
+      # 这里注意闭包的特性，同时由于connect会传参，因此需要用val占住第一个参数，这里用clicked事件最好，用stateChanged在逻辑上很繁琐
       for pos in range(len(self.widgets)):
         self.widgets[pos]["title"].clicked.connect(lambda val, _pos = pos : self.toggleSection(_pos))
 
-      # 将组件状态切换到与self.outer.base_config相同
-      self.toggleSectionByText(getDict(self.outer.base_config, params + ["type"]))
+      # 将组件状态切换到与base_config相同，但是由于现在处于init函数中，父亲组件还未初始化完成，所以不应该触发settingChanged，等父亲初始化完成后会自动调用
+      self.toggleSectionByText(getDict(base_config, self.params + ["type"]), False)
     
-    # 将选项卡切换到pos位置并更改self.outer.base_config对应项的值
+    # 将选项卡切换到pos位置
     def toggleSection(self, pos):
-      self.outer.changeDict(self.outer.base_config, self.params + ["type"], self.widgets[pos]["title"].text())
       for i in range(len(self.widgets)):
         if i == pos:
           self.widgets[i]["title"].setCheckState(QtCore.Qt.CheckState.Checked)
@@ -172,10 +199,10 @@ class Setting(QFrame):
         else:
           self.widgets[i]["title"].setCheckState(QtCore.Qt.CheckState.Unchecked)
           self.widgets[i]["sub"].setDisabled(True)
+      self.outer.settingChanged()
 
-    # 将选项卡切换到内容为text的位置并更改self.outer.base_config对应项的值
-    def toggleSectionByText(self, text):
-      self.outer.changeDict(self.outer.base_config, self.params + ["type"], text)
+    # 将选项卡切换到内容为text的位置
+    def toggleSectionByText(self, text, change = True):
       for section in self.widgets:
         if section["title"].text() == text:
           section["title"].setCheckState(QtCore.Qt.CheckState.Checked)
@@ -183,6 +210,8 @@ class Setting(QFrame):
         else:
           section["title"].setCheckState(QtCore.Qt.CheckState.Unchecked)
           section["sub"].setDisabled(True)
+      if change:
+        self.outer.settingChanged()
         
     # 这里直接调用toggleSectionByText来重置，这样即使默认的type不再section选项内也可以重置
     def resetDefaultValue(self):
@@ -196,6 +225,29 @@ class Setting(QFrame):
       for section in self.widgets:
         for item in section["content"]:
           item.cancelValue()
+    # 是否与base_config有差异，应该与save的逻辑相同，即changed()=False则save()无变化，反之changed()=True则save()有变化
+    def changed(self):
+      # 如果没有选中的选项，那么在保存的时候就不保存了，维持base_config的原值
+      for section in self.widgets:
+        # 保存时遇到第一项相同则保存
+        if section["title"].checkState() == QtCore.Qt.CheckState.Checked:
+          if section["title"].text() != getDict(base_config, self.params + ["type"]):
+            return True
+          else:
+            break
+      for section in self.widgets:
+        for item in section["content"]:
+          if item.changed():
+            return True
+      return False
+    def save(self):
+      # 如果没有选中的选项则不保存
+      for section in self.widgets:
+        if section["title"].checkState() == QtCore.Qt.CheckState.Checked:
+          setDict(base_config, self.params + ["type"], section["title"].text())
+      for section in self.widgets:
+        for item in section["content"]:
+         item.save()
 
   class SLogEdit(QFrame):
     def __init__(self, outer, text, params, *args):
@@ -203,10 +255,10 @@ class Setting(QFrame):
       self.params = params
       super().__init__(*args)
       self.contents = [
-        Setting.SPathSelect(self.outer, "日志存放位置", params + ["logs_dir"], lambda : (self.vFrame.adjustSize(), self.adjustSize(), self.outer.adjustSize())),
-        Setting.SComboBox(self.outer, "日志输出等级", params + ["logger_level"], getDict(self.outer.base_config, params + ["level_options"])),
-        Setting.SComboBox(self.outer, "文件输出等级", params + ["file_level"], getDict(self.outer.base_config, params + ["level_options"])),
-        Setting.SComboBox(self.outer, "命令行输出等级", params + ["stream_level"], getDict(self.outer.base_config, params + ["level_options"]))
+        Setting.SPathSelect(self.outer, "日志存放位置", self.params + ["logs_dir"], lambda : (self.vFrame.adjustSize(), self.adjustSize(), self.outer.adjustSize())),
+        Setting.SComboBox(self.outer, "日志输出等级", self.params + ["logger_level"], getDict(base_config, self.params + ["level_options"])),
+        Setting.SComboBox(self.outer, "文件输出等级", self.params + ["file_level"], getDict(base_config, self.params + ["level_options"])),
+        Setting.SComboBox(self.outer, "命令行输出等级", self.params + ["stream_level"], getDict(base_config, self.params + ["level_options"]))
       ]
       hbox = QHBoxLayout()
       self.vFrame = vFrame = QFrame()
@@ -230,16 +282,21 @@ class Setting(QFrame):
     def cancelValue(self):
       for item in self.contents:
         item.cancelValue()
+    # 是否与base_config有差异，应该与save的逻辑相同，即changed()=False则save()无变化，反之changed()=True则save()有变化
+    def changed(self):
+      for item in self.contents:
+        if item.changed():
+          return True
+      return False
+    def save(self):
+      for item in self.contents:
+        item.save()
 
   class STitle(QLabel):
     def __init__(self, outer, text, *args):
       self.outer = outer
       super().__init__(text, *args)
       self.setFont(Font.LEVEL1)
-
-  def changeDict(self, d, params, val):
-    setDict(d, params, val)
-    self.buttonStateChange()
 
   @property
   def changed(self):
@@ -254,11 +311,16 @@ class Setting(QFrame):
       self.cancelButton.setDisabled(True)
     self._changed = new_val
 
-  def buttonStateChange(self):
-    if self.base_config == base_config:
-      self.changed = False
-    else:
-      self.changed = True
+  def settingChanged(self):
+    """
+    判断设置是否发生了更改，并据此修改changed值
+    """
+    for section in self.content:
+      for option in section["options"]:
+        if option.changed():
+          self.changed = True
+          return
+    self.changed = False
 
   def adjustSize(self):
     for section in self.sections:
@@ -268,16 +330,12 @@ class Setting(QFrame):
   def __init__(self, *args):
     super().__init__(*args)
 
-    # 对象内部存储设置信息的副本
-    self.base_config = copy.deepcopy(base_config)
-
     self.initUI()
     
-    # 表示各项设置是否改变过
-    self.changed = False
+    # 依据子组件状态更改changed值
+    self.settingChanged()
 
   def initUI(self):
-
     # 功能按钮
     self.saveButton = QPushButton(" 保存")
     self.cancelButton = QPushButton(" 放弃")
@@ -296,7 +354,7 @@ class Setting(QFrame):
           Setting.SCheckBox(self, "每次下载完成后显示新增文件", ["__main__", "main", "print_new_file"]),
           Setting.SCheckBox(self, "存放新增文件快捷方式", ["__main__", "main", "save_new_file"]),
           Setting.SPathSelect(self, "新增文件快捷方式存放位置", ["__main__", "main", "save_as"], self.adjustSize),
-          Setting.SComboBox(self, "图片存放方式", ["spider", "image_by_folder"], self.base_config["spider"]["image_by_folder_options"]),
+          Setting.SComboBox(self, "图片存放方式", ["spider", "image_by_folder"], base_config["spider"]["image_by_folder_options"]),
           Setting.SDatabaseSelect(self, "数据库选择", ["spider", "database"]),
           Setting.SLogEdit(self, "日志（修改后需重启程序才能生效）", ["spider", "logs"])
         ]
@@ -476,9 +534,6 @@ class Setting(QFrame):
     # 设置边框，因为子组件scroll已经有边框了，所以这里就不用加了
     # self.setFrameShape(QFrame.Shape.StyledPanel)
 
-    # 所有工作完成之后更改一次按钮状态
-    self.buttonStateChange()
-
     # 最终样式修改
     scroll_widget.setStyleSheet(
       """
@@ -571,8 +626,15 @@ class Setting(QFrame):
       execute = True
     if execute:
       try:
-        saveJson(self.base_config, os.path.abspath("config.json"))
+        # 备份
+        backup = copy.deepcopy(base_config)
+        for section in self.content:
+          for option in section["options"]:
+            option.save()
+        saveJson(base_config, os.path.abspath("config.json"))
       except Exception as e:
+        # 还原
+        cover(base_config, backup)
         box = QMessageBox(self)
         box.setText(f"保存失败: {str(e)}")
         box.setWindowTitle("Pixiv下载工具")
@@ -590,9 +652,7 @@ class Setting(QFrame):
         box.exec()
         return False
       else:
-        base_config.clear()
-        cover(base_config, self.base_config)
-        self.buttonStateChange()
+        self.settingChanged()
         box = QMessageBox(self)
         box.setText(f"配置文件保存成功")
         box.setWindowTitle("Pixiv下载工具")
@@ -643,9 +703,6 @@ class Setting(QFrame):
       for part in self.content:
         for option in part["options"]:
           option.cancelValue()
-      # 讲道理上面已经放弃了所有设置，无需下面的操作了
-      # self.base_config = copy.deepcopy(base_config)
-      # self.buttonStateChange()
       return True
     else:
       return False

@@ -9,7 +9,7 @@ default_config = {
     # 该项字符串必须为数字组成，单位秒
     "timeout": "5",
     # 该项字符串必须为数字组成
-    "request_max_count": "5",
+    "request_max_count": "3",
     # 在判断数据库信息是否存在时，是否和硬盘中实际文件的md5进行比较
     "md5_match": True,
     # 在数据库查询时是否将无效的条目清除掉
