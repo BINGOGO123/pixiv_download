@@ -8,7 +8,7 @@ import PyQt6
 from PyQt6 import QtCore
 from PyQt6.QtCore import QEvent, QFileSelector, QRegularExpression, QSize, Qt
 from PyQt6.QtGui import QColor, QCursor, QFont, QIcon, QImage, QIntValidator, QPicture, QPixmap, QRegularExpressionValidator, QTextBlock, QTextCursor, QTextLine, QValidator
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QMessageBox, QPushButton, QScrollArea, QScrollBar, QScroller, QVBoxLayout, QWidget, QPlainTextEdit
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QMessageBox, QPushButton, QScrollArea, QScrollBar, QScroller, QTextEdit, QVBoxLayout, QWidget, QPlainTextEdit
 from config import base_config
 from spider.Spider import Spider
 from spider.err import NetworkException
@@ -245,18 +245,18 @@ class Account(QFrame):
     self.cookieEdit = QLineEdit(base_config["spider"]["cookie"])
     # 不以空格开头
     self.cookieEdit.setValidator(QRegularExpressionValidator(QRegularExpression('^\\S.*$')))
-    self.cookieEdit.setFixedWidth(180)
+    self.cookieEdit.setFixedWidth(200)
     cookie.setAlignment(Qt.AlignmentFlag.AlignCenter)
     self.cookieEdit.setFont(Font.ENGLISH_LEVEL4)
     self.cookieEdit.setStyleSheet(
       """
       QLineEdit {
-        background-color: rgb(245, 245, 245);
+        background-color: rgb(240, 240, 240);
+        padding: 3px 7px 3px 7px;
         border: none;
-        padding: 3px 5px 3px 5px;
         border-width: 1px;
         border-style: solid;
-        border-color: rgb(245, 245, 245);
+        border-color: rgb(240, 240, 240);
         margin-right:5px;
       }
       QLineEdit:focus {
@@ -421,3 +421,8 @@ class Account(QFrame):
     else:
       return True
 
+  def clear(self):
+    """
+    程序推出前的善后工作
+    """
+    

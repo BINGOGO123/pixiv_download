@@ -29,7 +29,7 @@ class PathSelect(QFrame):
     self.valButton.setStyleSheet(
       """
       QPushButton {
-        background-color: rgb(245, 245, 245);
+        background-color: rgb(240, 240, 240);
         border:none;
         padding:5px;
       }

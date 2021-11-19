@@ -1,5 +1,6 @@
 # 选择框
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel
 
 
@@ -25,6 +26,31 @@ class ComboBox(QFrame):
     label.setFont(self.font)
     layout.addWidget(label)
     self.combo = QComboBox()
+    self.combo.setStyleSheet(
+      """
+      QComboBox {
+        border: 1px solid rgb(200, 200, 200);
+        background-color: rgb(240, 240, 240);
+        padding: 2px 0 2px 5px;
+        min-width: 9em;
+      }
+      QComboBox::drop-down {
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        /* width: 20px;*/
+        border: none;
+      }
+      QComboBox::down-arrow {
+        image: url(:/misc/down_arrow_2);
+      }
+      QComboBox QAbstractItemView {
+        border-top: none;
+        border-left: 1px solid rgb(200, 200, 200);
+        border-right: 1px solid rgb(200, 200, 200);
+        border-bottom: 1px solid rgb(200, 200, 200);
+      }
+      """
+    )
     for item in self.valList:
       self.combo.addItem(item)
     self.combo.setCurrentText(self.val)

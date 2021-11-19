@@ -289,7 +289,7 @@ class Setting(QFrame):
         "options": 
         [
           Setting.SPathSelect(self, "文件存放位置", ["spider", "save_dir_name"], self.adjustSize),
-          Setting.SLineEdit(self, "请求超时(ms)", ["spider", "timeout"], True),
+          Setting.SLineEdit(self, "请求超时(秒)", ["spider", "timeout"], True),
           Setting.SLineEdit(self, "最大请求次数", ["spider", "request_max_count"], True),
           Setting.SCheckBox(self, "MD5匹配", ["spider", "md5_match"]),
           Setting.SCheckBox(self, "校正数据库", ["spider", "clear"]),
@@ -298,7 +298,7 @@ class Setting(QFrame):
           Setting.SPathSelect(self, "新增文件快捷方式存放位置", ["__main__", "main", "save_as"], self.adjustSize),
           Setting.SComboBox(self, "图片存放方式", ["spider", "image_by_folder"], self.base_config["spider"]["image_by_folder_options"]),
           Setting.SDatabaseSelect(self, "数据库选择", ["spider", "database"]),
-          Setting.SLogEdit(self, "日志（不建议修改）", ["spider", "logs"])
+          Setting.SLogEdit(self, "日志（修改后需重启程序才能生效）", ["spider", "logs"])
         ]
       }, 
       {

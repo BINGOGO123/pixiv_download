@@ -192,11 +192,12 @@ pixiv_download
 - [ ] check.py main.py migrate.py重写
 - [ ] 当account保存成功时，setting将不能正确判断状态是否变化，此时保存将覆盖account所作的保存
 - [ ] setting模块应该是逐项修改，而不是全部覆盖
-- [ ] setting日志选项提示必须重启才能生效
+- [x] setting日志选项提示必须重启才能生效
 - [x] 当spider初始化时应该将config存储于对象变量中，此时config更改对于已经创建的对象无影响，但是对于以后创建的对象有影响
 - [x] 定时器失效：多线程通知主线程开关定时器
 - [x] 当修改时recheck应该不可用：可用应该也是可以的
-- [ ] cookie输入框换成多行的
+- [x] cookie输入框换成多行的：还是单行更好一些，因为请求头不能有回车
 - [x] QObject::setParent: Cannot set parent, new parent is in a different thread
 - [x] account切换提示
 - [ ] 关闭时若account依旧在验证应该将其杀死
+- [ ] 查询时允许用户修改
