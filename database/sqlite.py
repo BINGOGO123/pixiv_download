@@ -15,13 +15,14 @@ class Db(AbstractDb):
     logger.debug("config = {}".format(self.config))
     if db.split(".")[-1] != "db":
       db += ".db"
-    self.db = sqlite3.connect(db)
+    self.db = sqlite3.connect(db, check_same_thread = False)
 
   def __del__(self):
     """
     析构对象
     """
-    self.db.close()
+    if hasattr(self, "db"):
+      self.db.close()
   
   def execute(self, sql):
     """

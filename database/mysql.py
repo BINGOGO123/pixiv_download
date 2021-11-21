@@ -5,7 +5,7 @@ from config import base_config
 from . import module_name
 from . import logger
 from tool.tool import cover
-from .err import ConnectException
+from .err import ConnectException, ParameterException
 from .AbstractDb import AbstractDb
 import copy
 
@@ -19,7 +19,11 @@ class Db(AbstractDb):
     logger.debug("Db(host={}, port={}, user={}, password={}, db={})".format(host, port, user, password, db))
     self.config = copy.deepcopy(base_config[module_name])
     logger.debug("config = {}".format(self.config))
-    port = int(port)
+    try:
+      port = int(port)
+    except ValueError as e:
+      logger.exception("{}-port参数异常".format(module_name))
+      raise ParameterException("{}-port参数异常".format(module_name))
     db_connect_params = {
       "creator": pymysql,  # 使用链接数据库的模块
       "maxconnections": 6,  # 连接池允许的最大连接数，0和None表示不限制连接数
@@ -55,11 +59,11 @@ class Db(AbstractDb):
         # 在下面处理
         pass
       else:
-        logger.exception("连接数据库失败")
-        raise ConnectException("连接数据库失败")
+        logger.exception("连接mysql失败")
+        raise ConnectException("连接mysql失败")
     except Exception:
-      logger.exception("连接数据库失败")
-      raise ConnectException("连接数据库失败")
+      logger.exception("连接mysql失败")
+      raise ConnectException("连接mysql失败")
     else:
       # 没有异常发生
       return
@@ -74,11 +78,11 @@ class Db(AbstractDb):
         password = password,
         **db_connect_params)
     except Exception:
-      logger.exception("连接数据库失败")
-      raise ConnectException("连接数据库失败")
+      logger.exception("连接mysql失败")
+      raise ConnectException("连接mysql失败")
     if self.execute("create database if not exists {}".format(db)) == False:
-      logger.error("创建数据库失败")
-      raise ConnectException("连接数据库失败")
+      logger.error("创建数据库{}失败".format(db))
+      raise ConnectException("创建数据库{}失败".format(db))
 
     # 再次连接
     try:
@@ -90,14 +94,15 @@ class Db(AbstractDb):
         database = db,
         **db_connect_params)
     except Exception:
-      logger.exception("连接数据库失败")
-      raise ConnectException("连接数据库失败")
+      logger.exception("连接mysql失败")
+      raise ConnectException("连接mysql失败")
 
   def __del__(self):
     """
     析构对象
     """
-    self.pool.close()
+    if hasattr(self, "pool"):
+      self.pool.close()
     
   def create_conn(self):
     conn = self.pool.connection()

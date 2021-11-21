@@ -1,4 +1,10 @@
 # 异常类
 
-class ConnectException(Exception):
+class DatabaseException(Exception):
+  pass
+
+class ConnectException(DatabaseException):
+  pass
+
+class ParameterException(DatabaseException):
   pass

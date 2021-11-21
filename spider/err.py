@@ -5,3 +5,6 @@ class InitException(Exception):
 
 class NetworkException(Exception):
   pass
+
+class AccountException(Exception):
+  pass

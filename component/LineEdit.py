@@ -10,8 +10,8 @@ class LineEdit(QFrame):
     """
     number和letter表示是否仅限输入数字和字母, password表示是否对输入内容进行隐藏
 
-    number = False and letter = False 表示无限制
-    
+    number = False and letter = False 表示无限制，但是不能输入空白符号
+
     number = True and letter = False 表示仅限输入数字，范围为0-999999
 
     number = False and letter = True 表示仅限输入字母
@@ -52,6 +52,9 @@ class LineEdit(QFrame):
       # self.edit.setValidator(QIntValidator(0, 1000))
     elif self.letter:
       self.edit.setValidator(QRegularExpressionValidator(QRegularExpression('^[a-zA-Z]*$')))
+    else:
+      # 不能输入空白符号
+      self.edit.setValidator(QRegularExpressionValidator(QRegularExpression('^\\S*$')))
     self.edit.setStyleSheet(
       """
       QLineEdit {

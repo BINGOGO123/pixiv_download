@@ -1,6 +1,6 @@
 # 主界面
 
-from PyQt6.QtGui import QIcon, QValidator
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 from component.About import About
 

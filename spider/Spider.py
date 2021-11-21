@@ -10,7 +10,7 @@ from tool.tool import get_md5
 from config import base_config
 from . import logger
 from . import module_name
-from .err import InitException, NetworkException
+from .err import InitException, NetworkException, AccountException
 import copy
 
 # 用以爬虫的配置
@@ -89,8 +89,17 @@ class Spider:
     """
     logger.debug("get_response(url={}, kwargs={})".format(url, kwargs))
     if kwargs.get("timeout") == None:
-      kwargs["timeout"] = int(self.config["timeout"])
-    count, max_count = 0, int(self.config["request_max_count"])
+      try:
+        kwargs["timeout"] = int(self.config["timeout"])
+      except ValueError:
+        logger.error("{}-timeout参数不合法，使用timeout=5".format(module_name))
+        kwargs["timeout"] = 5
+    try:
+      max_count = int(self.config["request_max_count"])
+    except ValueError:
+      logger.error("{}-request_max_count参数不合法，使用request_max_count=3".format(module_name))
+      max_count = 3
+    count = 0
     while True:
       try:
         res = self.s.get(url, **kwargs)
@@ -563,15 +572,37 @@ class Spider:
     """
     logger.info("test()")
     url = "https://www.pixiv.net/ajax/user/extra?lang=zh"
-    ret = True
-    res = self.get_response(url)
-    if res == False:
-      ret = False
-    else:
+    try:
+      timeout = int(self.config["timeout"])
+    except ValueError:
+      logger.error("{}-timeout参数不合法，使用timeout=5".format(module_name))
+      timeout = 5
+    try:
+      max_count = int(self.config["request_max_count"])
+    except ValueError:
+      logger.error("{}-request_max_count参数不合法，使用request_max_count=3".format(module_name))
+      max_count = 3
+    count = 0
+    while True:
       try:
-        res.json()
-      except Exception as e:
-        ret = False
-    logger.info("ret = {}".format(ret))
-    return ret
-    
+        res = self.s.get(url, timeout = timeout)
+        break
+      # 这里不会捕获KeyboardInterrupt
+      except Exception:
+        count += 1
+        logger.exception("第{}次失败".format(count))
+        if count == max_count:
+          logger.error("达到失败次数上限{} url={}".format(count,url))
+          raise NetworkException("网络异常")
+    try:
+      res.raise_for_status()
+    except Exception:
+      logger.exception("请求状态异常")
+      raise AccountException("请求状态异常")
+    try:
+      res.json()
+    except Exception:
+      logger.exception("请求内容无法解析")
+      raise AccountException("请求内容无法JSON解析")
+    logger.info("test success")
+    return True

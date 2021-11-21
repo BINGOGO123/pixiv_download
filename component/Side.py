@@ -3,7 +3,7 @@
 from PyQt6 import QtCore
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QColor, QIcon
-from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QPushButton, QVBoxLayout
+from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QPushButton, QVBoxLayout
 from .Font import Font
 from .Account import Account
 
@@ -139,7 +139,7 @@ class Side(QFrame):
     elif state == Account.State.QUERY:
       userIcon = QIcon("icons/query.svg")
     else:
-      userIcon = QIcon("icons/user.svg")
+      userIcon = QIcon("icons/error.svg")
     self.buttonList[0].setIcon(userIcon)
     self.buttonList[0].setIconSize(QSize(60, 60))
       

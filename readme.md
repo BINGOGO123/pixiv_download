@@ -188,12 +188,13 @@ pixiv_download
 - [x] 把头像改成button的icon，同步side的账户按钮和里面的图形一致
 - [x] 账户状态改变时通知父亲
 - [ ] 用户界面打开时会出现一个小窗口闪动一下
-- [ ] 未对用户界面输入的前后空白符号做处理
+- [x] 未对用户界面输入的前后空白符号做处理：cookie不以空白符号开头但是末尾可以跟空白符号，LineEdit则不能输入空白符号
 - [ ] check.py main.py migrate.py重写
+- [x] setting保存成功不弹出单独页面，改为在主页面中的某个位置显示：目前改为成功不提示，失败才提示
 - [x] 当account保存成功时，setting将不能正确判断状态是否变化，此时保存将覆盖account所作的保存
 - [x] setting模块应该是逐项修改，而不是全部覆盖
-- [ ] setting数字转换不合法问题
-- [ ] 当选择mysql数据库时提示mysql不存在
+- [x] setting数字转换不合法问题：当timeout和request_max_count不合法时将使用代码中指定的参数
+- [x] 当选择mysql数据库时提示mysql不存在：由于没有安装DBUtils导致
 - [x] setting日志选项提示必须重启才能生效
 - [x] 当spider初始化时应该将config存储于对象变量中，此时config更改对于已经创建的对象无影响，但是对于以后创建的对象有影响
 - [x] 定时器失效：多线程通知主线程开关定时器
@@ -201,6 +202,7 @@ pixiv_download
 - [x] cookie输入框换成多行的：还是单行更好一些，因为请求头不能有回车
 - [x] QObject::setParent: Cannot set parent, new parent is in a different thread
 - [x] account切换提示
-- [ ] 关闭时若account依旧在验证应该将其杀死
-- [ ] 动画线程因意外终止需关闭动画
-- [ ] 查询时允许用户修改
+- [x] 动画线程因意外终止：保证不会异常关闭
+- [x] 关闭时若account依旧在验证应该将其杀死
+- [x] 查询时允许用户修改，即需要能终止正在进行的查询
+- [x] account区分网络错误和账户错误

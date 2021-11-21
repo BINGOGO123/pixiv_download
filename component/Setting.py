@@ -653,21 +653,21 @@ class Setting(QFrame):
         return False
       else:
         self.settingChanged()
-        box = QMessageBox(self)
-        box.setText(f"配置文件保存成功")
-        box.setWindowTitle("Pixiv下载工具")
-        box.setFont(Font.LEVEL3)
-        okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
-        okButton.setFont(Font.LEVEL4)
-        box.setDefaultButton(okButton)
-        box.setStyleSheet(
-          """
-          QLabel {
-            color: rgb(0, 51, 153);
-          }
-          """
-        )
-        box.exec()
+        # box = QMessageBox(self)
+        # box.setText(f"配置文件保存成功")
+        # box.setWindowTitle("Pixiv下载工具")
+        # box.setFont(Font.LEVEL3)
+        # okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
+        # okButton.setFont(Font.LEVEL4)
+        # box.setDefaultButton(okButton)
+        # box.setStyleSheet(
+        #   """
+        #   QLabel {
+        #     color: rgb(0, 51, 153);
+        #   }
+        #   """
+        # )
+        # box.exec()
         return True
     else:
       return False

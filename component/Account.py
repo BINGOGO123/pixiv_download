@@ -1,21 +1,18 @@
 # 账户界面
 
 from enum import Enum
-import json
 import os
-import sys
-import PyQt6
 from PyQt6 import QtCore
-from PyQt6.QtCore import QEvent, QFileSelector, QRegularExpression, QSize, Qt
-from PyQt6.QtGui import QColor, QCursor, QFont, QIcon, QImage, QIntValidator, QPicture, QPixmap, QRegularExpressionValidator, QTextBlock, QTextCursor, QTextLine, QValidator
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QMessageBox, QPushButton, QScrollArea, QScrollBar, QScroller, QTextEdit, QVBoxLayout, QWidget, QPlainTextEdit
+from PyQt6.QtCore import QEvent, QRegularExpression, QSize, Qt
+from PyQt6.QtGui import QIcon, QRegularExpressionValidator
+from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout, QWidget
 from config import base_config
 from spider.Spider import Spider
-from spider.err import NetworkException
+from spider.err import AccountException, NetworkException
 from .Font import Font
-import copy
 from tool.tool import saveJson
 import threading
+import ctypes
 
 class StateChangeEvent(QEvent):
   """
@@ -35,6 +32,7 @@ class Account(QFrame):
     ERROR = "账户不可用"
     NETWORK_ANOMALY = "网络异常"
     UNKNOWN = "账户状态未知"
+    SYSTEM_ERROR = "系统异常"
 
   def timerEvent(self, a0):
     text = self.tip.text()
@@ -58,80 +56,84 @@ class Account(QFrame):
       self.saveButton.setDisabled(True)
       self.quitButton.setDisabled(True)
 
-
   def customEvent(self, e):
     if e.type() == StateChangeEvent.idType:
-      state = e.state
-      # 停止计时器
-      if self.timeID != None:
-        self.killTimer(self.timeID)
-        self.timeID = None
-      # 设置文字值
-      self.tip.setText(state.value)
-      # 设置文字颜色
-      if state == self.State.ERROR or state == self.State.NETWORK_ANOMALY:
-        self.tip.setStyleSheet(
-          """
-          color: #d03404;
-          """
-        )
-      elif state == self.State.OK:
-        self.tip.setStyleSheet(
-          """
-          color: green;
-          """
-        )
-      elif state == self.State.NONE or state == self.State.UNKNOWN:
-        self.tip.setStyleSheet(
-          """
-          color: black;
-          """
-        )
-      elif state == self.State.QUERY:
-        self.tip.setStyleSheet(
-          """
-          color: #1296db;
-          """
-        )
-      if state == Account.State.NONE or state == Account.State.UNKNOWN:
-        userIcon = QIcon("icons/user.svg")
-      elif state == Account.State.ERROR or state == Account.State.NETWORK_ANOMALY:
-        userIcon = QIcon("icons/cry.svg")
-      elif state == Account.State.OK:
-        userIcon = QIcon("icons/smile.svg")
-      elif state == Account.State.QUERY:
-        userIcon = QIcon("icons/query.svg")
-      else:
-        userIcon = QIcon("icons/user.svg")
-      self.head.setIcon(userIcon)
-      self.head.setIconSize(QSize(180, 180))
-      # 设置重新测试按钮是否隐藏
-      if state == self.State.NONE or state == self.State.QUERY:
-        self.recheck.setHidden(True)
-      else:
-        self.recheck.setHidden(False)
-      # 设置输入可编辑性
-      if state == self.State.QUERY:
-        self.cookieEdit.setDisabled(True)
-      else:
-        self.cookieEdit.setDisabled(False)
-      # 判断是否开始计时器
-      if state == self.State.QUERY:
-        self.timeID = self.startTimer(500)
-      # 通知父亲状态发生变化
-      self.inform(state)
-
+      self.state = e.state
 
   @property
   def state(self):
     return self._state
   @state.setter
   def state(self, new_val):
-    if type(new_val) != Account.State:
-      raise Exception("未知状态：{}".format(repr(new_val)))
     # 关闭定时器
-    self._state = new_val
-    QtCore.QCoreApplication.postEvent(self, StateChangeEvent(self._state))
+    self._state = state = new_val
+    # 停止计时器
+    if self.timeID != None:
+      self.killTimer(self.timeID)
+      self.timeID = None
+    # 设置文字值
+    if type(state) == self.State:
+      self.tip.setText(state.value)
+    else:
+      self.tip.setText(state)
+    # 设置文字颜色
+    if state == self.State.ERROR or state == self.State.NETWORK_ANOMALY:
+      self.tip.setStyleSheet(
+        """
+        color: #d03404;
+        """
+      )
+    elif state == self.State.OK:
+      self.tip.setStyleSheet(
+        """
+        color: green;
+        """
+      )
+    elif state == self.State.NONE or state == self.State.UNKNOWN:
+      self.tip.setStyleSheet(
+        """
+        color: black;
+        """
+      )
+    elif state == self.State.QUERY:
+      self.tip.setStyleSheet(
+        """
+        color: #1296db;
+        """
+      )
+    else:
+      self.tip.setStyleSheet(
+        """
+        color: #d03404;
+        """
+      )
+    if state == Account.State.NONE or state == Account.State.UNKNOWN:
+      userIcon = QIcon("icons/user.svg")
+    elif state == Account.State.ERROR or state == Account.State.NETWORK_ANOMALY:
+      userIcon = QIcon("icons/cry.svg")
+    elif state == Account.State.OK:
+      userIcon = QIcon("icons/smile.svg")
+    elif state == Account.State.QUERY:
+      userIcon = QIcon("icons/query.svg")
+    else:
+      userIcon = QIcon("icons/error.svg")
+    self.head.setIcon(userIcon)
+    self.head.setIconSize(QSize(180, 180))
+    # 设置重新测试按钮是否隐藏
+    if state == self.State.NONE or state == self.State.QUERY:
+      self.recheck.setHidden(True)
+    else:
+      self.recheck.setHidden(False)
+    # 设置输入可编辑性
+    # if state == self.State.QUERY:
+    #   self.cookieEdit.setDisabled(True)
+    # else:
+    #   self.cookieEdit.setDisabled(False)
+    # 判断是否开始计时器
+    if state == self.State.QUERY:
+      self.timeID = self.startTimer(500)
+    # 通知父亲状态发生变化
+    self.inform(state)
     
 
   def checkValue(self):
@@ -187,6 +189,8 @@ class Account(QFrame):
 
     self.initUI()
 
+    # 记录正在运行的测试线程
+    self.test = None
     # 记录定时器ID
     self.timeID = None
     # 表示内容是否改变过
@@ -199,12 +203,6 @@ class Account(QFrame):
 
   def initUI(self):
     # 头像
-    # self.head = QLabel()
-    # self.head.setStyleSheet(
-    #   """
-    #   border-radius: 1px;
-    #   """
-    # )
     self.head = QPushButton()
     self.head.setStyleSheet(
       """
@@ -365,24 +363,15 @@ class Account(QFrame):
 
   # 验证账户是否可用
   def verifyAccount(self):
-    def sign():
-      cookie = base_config["spider"]["cookie"]
-      if cookie == "":
-        self.state = self.State.NONE
-      else:
-        self.state = self.State.QUERY
-        spider = Spider()
-        try:
-          ret = spider.test()
-          if ret == True:
-            self.state = self.State.OK
-          else:
-            self.state = self.State.ERROR
-        except NetworkException:
-          self.state = self.State.NETWORK_ANOMALY
-    t = threading.Thread(target = sign, args = ())
-    t.start()
-
+    cookie = base_config["spider"]["cookie"]
+    # 终止正在进行的测试线程
+    if self.test != None:
+      self.test.raise_exception()
+    # 开启新的测试线程
+    self.test = SpiderTest(self, cookie)
+    # 当程序退出时线程终止
+    self.test.setDaemon(True)
+    self.test.start()
 
   # 获取组件当前是否可以切走
   def canSwitchOut(self):
@@ -421,8 +410,40 @@ class Account(QFrame):
     else:
       return True
 
-  def clear(self):
-    """
-    程序推出前的善后工作
-    """
-    
+
+class SpiderTest(threading.Thread):
+  def __init__(self, target, cookie):
+    threading.Thread.__init__(self)
+    self.target = target
+    self.cookie = cookie
+    self.a = []
+  
+  def run(self):
+    if self.cookie == "":
+      QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(self.target.State.NONE))
+    else:
+      QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(self.target.State.QUERY))
+      try:
+        spider = Spider()
+        spider.test()
+        QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(self.target.State.OK))
+      except AccountException:
+        QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(self.target.State.ERROR))
+      except NetworkException:
+        QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(self.target.State.NETWORK_ANOMALY))
+      except Exception as e:
+        QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent("系统异常：{}".format(str(e))))
+
+  def get_id(self):
+    if hasattr(self, '_thread_id'):
+      return self._thread_id
+    for id, thread in threading._active.items():
+      if thread is self:
+        return id
+
+  def raise_exception(self):
+    thread_id = self.get_id() 
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit)) 
+    if res > 1: 
+      ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0) 
+      print('Exception raise failure') 
