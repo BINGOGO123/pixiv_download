@@ -6,15 +6,16 @@ from PyQt6.QtGui import QColor, QIcon
 from PyQt6.QtWidgets import QCheckBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
 import copy
 from tool.tool import saveJson
-from .Font import Font
+from .component.Font import Font
 
 from tool.tool import cover, getDict, setDict
 from config import base_config, default_config
-from .LineEdit import LineEdit
-from .CheckBox import CheckBox
-from .ComboBox import ComboBox
-from .PathSelect import PathSelect
-from .ResetButton import ResetButton
+from .component.LineEdit import LineEdit
+from .component.CheckBox import CheckBox
+from .component.ComboBox import ComboBox
+from .component.PathSelect import PathSelect
+from .component.ResetButton import ResetButton
+from . import logger
 
 class Setting(QFrame):
   # 内部类二次封装
@@ -39,7 +40,11 @@ class Setting(QFrame):
         return False
       return True
     def save(self):
-      setDict(base_config, self.params, self.getValue())
+      new_value = self.getValue()
+      previous_value = getDict(base_config, self.params)
+      if new_value != previous_value:
+        logger.debug("{}:({})->({})".format(self.params, previous_value, new_value))
+        setDict(base_config, self.params, new_value)
 
   class SComboBox(ComboBox):
     def __init__(self, outer, name, params, valList, inform = lambda : 1, *args):
@@ -63,7 +68,11 @@ class Setting(QFrame):
         return False
       return True
     def save(self):
-      setDict(base_config, self.params, self.getValue())
+      new_value = self.getValue()
+      previous_value = getDict(base_config, self.params)
+      if new_value != previous_value:
+        logger.debug("{}:({})->({})".format(self.params, previous_value, new_value))
+        setDict(base_config, self.params, new_value)
     
   class SLineEdit(LineEdit):
     def __init__(self, outer, name, params, number = False, letter = False, password = False, inform = lambda : 1, *args):
@@ -89,7 +98,11 @@ class Setting(QFrame):
         return False
       return True
     def save(self):
-      setDict(base_config, self.params, self.getValue())
+      new_value = self.getValue()
+      previous_value = getDict(base_config, self.params)
+      if new_value != previous_value:
+        logger.debug("{}:({})->({})".format(self.params, previous_value, new_value))
+        setDict(base_config, self.params, new_value)
 
   class SPathSelect(PathSelect):
     def __init__(self, outer, name, params, inform = lambda : 1, *args):
@@ -112,7 +125,11 @@ class Setting(QFrame):
         return False
       return True
     def save(self):
-      setDict(base_config, self.params, self.getValue())
+      new_value = self.getValue()
+      previous_value = getDict(base_config, self.params)
+      if new_value != previous_value:
+        logger.debug("{}:({})->({})".format(self.params, previous_value, new_value))
+        setDict(base_config, self.params, new_value)
     
   class SDatabaseSelect(QFrame):
     def __init__(self, outer, text, params, *args):
@@ -244,7 +261,12 @@ class Setting(QFrame):
       # 如果没有选中的选项则不保存
       for section in self.widgets:
         if section["title"].checkState() == QtCore.Qt.CheckState.Checked:
-          setDict(base_config, self.params + ["type"], section["title"].text())
+          previous_value = getDict(base_config, self.params + ["type"])
+          new_value = section["title"].text()
+          if new_value != previous_value:
+            logger.debug("{}:({})->({})".format(self.params + ["type"], previous_value, new_value))
+            setDict(base_config, self.params + ["type"], new_value)
+          break
       for section in self.widgets:
         for item in section["content"]:
          item.save()
@@ -381,7 +403,14 @@ class Setting(QFrame):
         "options": 
         [
           Setting.SCheckBox(self, "若数据库名不存在是否自动创建（仅限mysql）", ["database", "create"]),
-          Setting.SLogEdit(self, "日志（不建议修改）", ["database", "logs"])
+          Setting.SLogEdit(self, "日志（修改后需重启程序才能生效）", ["database", "logs"])
+        ]
+      },
+      {
+        "title": Setting.STitle(self, "图形客户端设置"),
+        "options": 
+        [
+          Setting.SLogEdit(self, "日志（修改后需重启程序才能生效）", ["gui", "logs"])
         ]
       }
     ]
@@ -633,6 +662,7 @@ class Setting(QFrame):
             option.save()
         saveJson(base_config, os.path.abspath("config.json"))
       except Exception as e:
+        logger.error("设置保存失败")
         # 还原
         cover(base_config, backup)
         box = QMessageBox(self)
@@ -652,6 +682,7 @@ class Setting(QFrame):
         box.exec()
         return False
       else:
+        logger.info("设置保存成功")
         self.settingChanged()
         # box = QMessageBox(self)
         # box.setText(f"配置文件保存成功")

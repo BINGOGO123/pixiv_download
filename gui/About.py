@@ -1,7 +1,7 @@
 # 关于界面
 
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
-from .Font import Font
+from .component.Font import Font
 
 
 class About(QFrame):

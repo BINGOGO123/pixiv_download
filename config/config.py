@@ -59,6 +59,16 @@ default_config = {
 
     }
   },
+  "gui": {
+    "logs": {
+      # 路径可以为相对路径或者绝对路径可以用\或者/
+      "logs_dir": "logs/",
+      "logger_level": "logging.DEBUG",
+      "file_level": "logging.DEBUG",
+      "stream_level": "logging.INFO",
+      "level_options": ["logging.DEBUG", "logging.INFO", "logging.WARNING", "logging.ERROR", "logging.CRITICAL"]
+    }
+  },
   # 这一部分是主函数的配置信息，子键为脚本名称
   "__main__": {
     # 给main.py的配置

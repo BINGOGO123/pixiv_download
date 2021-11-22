@@ -9,10 +9,11 @@ from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
 from config import base_config
 from spider.Spider import Spider
 from spider.err import AccountException, NetworkException
-from .Font import Font
+from .component.Font import Font
 from tool.tool import saveJson
 import threading
 import ctypes
+from . import logger
 
 class StateChangeEvent(QEvent):
   """
@@ -145,10 +146,12 @@ class Account(QFrame):
   def save(self):
     previous_cookie = base_config["spider"]["cookie"]
     base_config["spider"]["cookie"] = self.cookieEdit.text()
+    logger.debug("['spider', 'cookie']:\n({})\n->({})".format(previous_cookie, base_config["spider"]["cookie"]))
     try:
       saveJson(base_config, os.path.abspath("config.json"))
     except Exception as e:
       # 将base_config还原
+      logger.error("账户保存失败")
       base_config["spider"]["cookie"] =previous_cookie
       box = QMessageBox(self)
       box.setText(f"保存失败: {str(e)}")
@@ -168,12 +171,12 @@ class Account(QFrame):
       box.exec()
       return False
     else:
-      return True
-    finally:
+      logger.error("账户保存成功")
       # 更新changed状态
       self.checkValue()
       # 验证账户状态
       self.verifyAccount()
+      return True
 
   def quit(self):
     # 因为setText最终会调用checkValue，因此最后无需再次调用
@@ -446,4 +449,4 @@ class SpiderTest(threading.Thread):
     res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit)) 
     if res > 1: 
       ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0) 
-      print('Exception raise failure') 
+      logger.error("SpiderTest终止失败")

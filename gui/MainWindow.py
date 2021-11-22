@@ -2,17 +2,19 @@
 
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
-from component.About import About
+from .About import About
 
-from component.Account import Account
-from component.Download import Download
-from component.Setting import Setting
-from component.Side import Side
-from component.View import View
+from .Account import Account
+from .Download import Download
+from .Setting import Setting
+from .Side import Side
+from .View import View
+from . import logger
 
 class MainWindow(QMainWindow):
 
   def __init__(self):
+    logger.debug("gui start")
     super().__init__()
 
     self.initUI()

@@ -103,7 +103,6 @@ class Spider:
     while True:
       try:
         res = self.s.get(url, **kwargs)
-        res.raise_for_status()
         break
       # 这里不会捕获KeyboardInterrupt
       except Exception:
@@ -112,6 +111,11 @@ class Spider:
         if count == max_count:
           logger.error("达到失败次数上限{} url={}".format(count,url))
           return False
+    try:
+      res.raise_for_status()
+    except Exception:
+      logger.exception("请求状态异常")
+      return False
     return res
 
   def url_analyze(self, url: str):

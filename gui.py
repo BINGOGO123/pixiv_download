@@ -3,7 +3,7 @@ from PyQt6.QtCore import QCoreApplication, Qt
 from PyQt6.QtWidgets import QApplication
 import sys
 
-from component.MainWindow import MainWindow
+from gui.MainWindow import MainWindow
 
 
 if __name__ == '__main__':

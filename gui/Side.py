@@ -4,7 +4,7 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QColor, QIcon
 from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QPushButton, QVBoxLayout
-from .Font import Font
+from .component.Font import Font
 from .Account import Account
 
 class Side(QFrame):
