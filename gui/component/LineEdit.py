@@ -2,7 +2,7 @@
 
 from PyQt6.QtCore import QRegularExpression
 from PyQt6.QtGui import QRegularExpressionValidator
-from PyQt6.QtWidgets import QFrame, QLabel, QLineEdit, QVBoxLayout
+from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout
 
 class LineEdit(QFrame):
 
@@ -29,7 +29,7 @@ class LineEdit(QFrame):
     self.initUI()
 
   def initUI(self):
-    layout = QVBoxLayout()
+    layout = QHBoxLayout()
 
     # 添加标题
     title = QLabel(self.name)
@@ -83,6 +83,7 @@ class LineEdit(QFrame):
     # edit.setGraphicsEffect(qds)
 
     layout.addWidget(self.edit)
+    layout.addStretch(1)
 
     # 设置最后的修改样式
     layout.setContentsMargins(0, 0, 0, 0)

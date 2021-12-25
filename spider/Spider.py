@@ -118,7 +118,8 @@ class Spider:
       return False
     return res
 
-  def url_analyze(self, url: str):
+  @staticmethod
+  def url_analyze(url: str):
     """
     对url中的关键参数进行分析
     """
@@ -126,6 +127,13 @@ class Spider:
     m = regular.match(url)
     if m:
       return m.group(1), m.group(2)
+
+  @staticmethod
+  def url_package(uid: str, route: str):
+    """
+    将uid和route组装为url
+    """
+    return "https://www.pixiv.net/users/{}/{}".format(uid, route)
     
   def download(self, url: str):
     """
