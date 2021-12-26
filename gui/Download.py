@@ -5,7 +5,7 @@ import PyQt6
 from PyQt6 import QtCore
 from PyQt6.QtCore import QFileSelector, QRegularExpression
 from PyQt6.QtGui import QColor, QCursor, QFont, QIcon, QImage, QIntValidator, QPixmap, QRegularExpressionValidator, QTextCursor, QTextLine, QValidator
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QPushButton, QScrollArea, QScrollBar, QScroller, QVBoxLayout, QWidget, QPlainTextEdit
+from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QPushButton, QScrollArea, QScrollBar, QScroller, QVBoxLayout, QWidget, QPlainTextEdit
 
 from spider.Spider import Spider
 from .component.Font import Font
@@ -16,9 +16,10 @@ from . import logger
 
 
 class CreateDownload(QWidget):
-  def __init__(self, upper, name = "", uid = "", type = "bookmarks/artworks", *args):
+  def __init__(self, upper, name = "", uid = "", type = "bookmarks/artworks", pos = None, *args):
     super().__init__(*args)
     self.upper = upper
+    self.pos = pos
     self.initUI(name, uid, type)
     self.changeState()
     self.show()
@@ -97,7 +98,10 @@ class CreateDownload(QWidget):
     vbox.addStretch(1)
     self.setLayout(hbox)
     self.quitButton.clicked.connect(self.close)
-    self.saveButton.clicked.connect(lambda : (self.close(), self.upper.addDownload(*self.getInfo())))
+    if self.pos != None:
+      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.editDownloadCard(self.pos, *self.getInfo())))
+    else:
+      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.addDownloadCard(*self.getInfo())))
   def getInfo(self):
     return [self.nameEdit.getValue(), self.uidEdit.getValue(), self.typeEdit.getValue()]
   def changeState(self):
@@ -114,12 +118,15 @@ class Download(QFrame):
     super().__init__(*args)
 
     self.initUI()
+    self.stateChange()
 
   def initUI(self):
     # 获取配置信息
     downloadList = base_config["__main__"]["main"]["download_list"]
     self.downloadCards = []
     # 选项列表布局
+    self.scroll = scroll = QScrollArea()
+    self.scroll_widget = scroll_widget = QFrame()
     self.layout = layout = QVBoxLayout()
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(0)
@@ -144,176 +151,13 @@ class Download(QFrame):
       else:
         logger.error("{} 类型错误".format(item))
         continue
-      # 一个下载卡片
-      downloadBox = QFrame()
-      downloadLayout = QVBoxLayout()
-      titleLine = QHBoxLayout()
-      comboIcon = QIcon("icons/combox.svg")
-      comboButton = QPushButton()
-      comboButton.setIcon(comboIcon)
-      comboButton.setIconSize(QtCore.QSize(12, 12))
-      comboButton.setStyleSheet(
-        """
-        QPushButton {
-          border: none;
-          padding: 2px; 
-          border-radius:3px;
-        }
-        """
-      )
-      accountID = QLabel(name)
-      accountID.setFont(Font.LEVEL3)
-      upIcon = QIcon("icons/up.svg")
-      upButton = QPushButton()
-      upButton.setIcon(upIcon)
-      upButton.setIconSize(QtCore.QSize(12, 12))
-      upButton.setStyleSheet(
-        """
-        QPushButton {
-          border: none;
-          padding: 2px; 
-          border-radius:3px;
-        }
-        QPushButton:hover {
-          background-color: rgb(200, 200, 200);
-        }
-        QPushButton:pressed {
-          background-color:rgb(150, 150, 150);
-        }
-        """
-      )
-      downIcon = QIcon("icons/down.svg")
-      downButton = QPushButton()
-      downButton.setIcon(downIcon)
-      downButton.setIconSize(QtCore.QSize(12, 12))
-      downButton.setStyleSheet(
-        """
-        QPushButton {
-          border: none;
-          padding: 2px; 
-          border-radius:3px;
-        }
-        QPushButton:hover {
-          background-color: rgb(200, 200, 200);
-        }
-        QPushButton:pressed {
-          background-color:rgb(150, 150, 150);
-        }
-        """
-      )
-      editIcon = QIcon("icons/edit.svg")
-      editButton = QPushButton()
-      editButton.setIcon(editIcon)
-      editButton.setIconSize(QtCore.QSize(12, 12))
-      editButton.setStyleSheet(
-        """
-        QPushButton {
-          border: none;
-          padding: 2px; 
-          border-radius:3px;
-        }
-        QPushButton:hover {
-          background-color: rgb(200, 200, 200);
-        }
-        QPushButton:pressed {
-          background-color:rgb(150, 150, 150);
-        }
-        """
-      )
-      deleteIcon = QIcon("icons/delete.svg")
-      deleteButton = QPushButton()
-      deleteButton.setIcon(deleteIcon)
-      deleteButton.setIconSize(QtCore.QSize(12, 12))
-      deleteButton.setStyleSheet(
-        """
-        QPushButton {
-          border: none;
-          padding: 2px; 
-          border-radius:3px;
-        }
-        QPushButton:hover {
-          background-color: rgb(200, 200, 200);
-        }
-        QPushButton:pressed {
-          background-color:rgb(150, 150, 150);
-        }
-        """
-      )
-      uidLabel = QLabel("用户ID：{}".format(uid))
-      typeLabel = QLabel("类  型：{}".format(route))
-      typeLabel.setFont(Font.LEVEL4)
-      uidLabel.setFont(Font.LEVEL4)
-      # 将各个组件加入其中
-      titleLine.addWidget(comboButton)
-      titleLine.addWidget(accountID)
-      titleLine.addStretch(1)
-      titleLine.addWidget(upButton)
-      titleLine.addWidget(downButton)
-      titleLine.addWidget(editButton)
-      titleLine.addWidget(deleteButton)
-      downloadLayout.addLayout(titleLine)
-      downloadLayout.addSpacing(4)
-      downloadLayout.addWidget(uidLabel)
-      downloadLayout.addWidget(typeLabel)
-      downloadLayout.setContentsMargins(6, 6, 6, 6)
-      downloadLayout.setSpacing(4)
-      downloadBox.setLayout(downloadLayout)
-      downloadBox.setFixedWidth(254)
-      downloadBox.setStyleSheet(
-        """
-        .QFrame {
-          background-color: rgb(240, 240, 240);
-          background-color: rgb(250, 250, 250);
-          background-color: rgb(238, 238, 238);
-          background-color: rgb(238, 238, 238);
-          background-color: white;
-          background-color: transparent;
-
-        }
-        .QFrame:hover {
-          background-color: rgb(240, 240, 240);
-          background-color: rgb(250, 250, 250);
-          background-color: rgb(238, 238, 238);
-          background-color: white;
-          background-color: transparent;
-          background-color: rgb(238, 238, 238);
-        }
-        """
-      )
-      layout.addWidget(downloadBox)
-      self.downloadCards.append({
-        "combo": comboButton,
-        "download": downloadBox,
-        "select": False,
-        "up": upButton,
-        "down": downButton,
-        "edit": editButton,
-        "delete": deleteButton,
-        "uid": uidLabel,
-        "type": typeLabel,
-        "name": accountID
-      })
+      self.addDownloadCard(name, uid, route)
     layout.addStretch(1)
-
-    # 选中事件绑定
-    for pos in range(len(self.downloadCards)):
-      comboButton = self.downloadCards[pos]["combo"]
-      downloadBox = self.downloadCards[pos]["download"]
-      upButton = self.downloadCards[pos]["up"]
-      downButton = self.downloadCards[pos]["down"]
-      editButton = self.downloadCards[pos]["edit"]
-      deleteButton = self.downloadCards[pos]["delete"]
-      comboButton.clicked.connect(lambda val, _pos = pos: self.switch(_pos))
-      downloadBox.mousePressEvent = lambda val, _pos = pos: self.switch(_pos)
-      upButton.clicked.connect(lambda val, _pos = pos: self.up(_pos))
-      downButton.clicked.connect(lambda val, _pos = pos: self.down(_pos))
-      editButton.clicked.connect(lambda val, _pos = pos: self.edit(_pos))
-      deleteButton.clicked.connect(lambda val, _pos = pos: self.delete(_pos))
-
 
     layout_function = QHBoxLayout()
     startIcon = QIcon("icons/start.svg")
-    startButton = QPushButton()
+    self.startButton =  startButton = QPushButton()
+    startButton.setToolTip("开始所有下载项")
     startButton.setIconSize(QtCore.QSize(24, 24))
     startButton.setStyleSheet(
       """
@@ -351,7 +195,8 @@ class Download(QFrame):
     )
     terminateButton.setIcon(terminateIcon)
     addIcon = QIcon("icons/add.svg")
-    addButton = QPushButton()
+    self.addButton = addButton = QPushButton()
+    addButton.setToolTip("新建下载对象")
     addButton.setIconSize(QtCore.QSize(24, 24))
     addButton.setStyleSheet(
       """
@@ -370,7 +215,8 @@ class Download(QFrame):
     )
     addButton.setIcon(addIcon)
     deleteIcon = QIcon("icons/delete.svg")
-    deleteButton = QPushButton()
+    self.deleteButton = deleteButton = QPushButton()
+    deleteButton.setToolTip("删除所选下载项")
     deleteButton.setIconSize(QtCore.QSize(24, 24))
     deleteButton.setStyleSheet(
       """
@@ -408,13 +254,12 @@ class Download(QFrame):
 
     # 功能区事件绑定
     addButton.clicked.connect(self.add)
+    deleteButton.clicked.connect(self.deleteSelect)
 
     layout_final = QVBoxLayout()
     layout_final.addWidget(function_widget)
     layout_h = QHBoxLayout()
-    scroll = QScrollArea()
     scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-    self.scroll_widget = scroll_widget = QFrame()
     scroll_widget.setLayout(layout)
     scroll_widget.setContentsMargins(0, 0, 0, 0)
     scroll.setFixedWidth(260)
@@ -495,52 +340,7 @@ class Download(QFrame):
       """
     )
 
-  # 更换下载选项卡的选择
-  def switch(self, pos):
-    comboButton = self.downloadCards[pos]["combo"]
-    downloadBox = self.downloadCards[pos]["download"]
-    select = self.downloadCards[pos]["select"]
-    if not select:
-      comboIcon = QIcon("icons/combox_select.svg")
-      comboButton.setIcon(comboIcon)
-      downloadBox.setStyleSheet(
-        """
-        .QFrame {
-          background-color: #e8f0ff;
-        }
-        """
-      )
-    else:
-      comboIcon = QIcon("icons/combox.svg")
-      comboButton.setIcon(comboIcon)
-      downloadBox.setStyleSheet(
-        """
-        .QFrame {
-          background-color: transparent;
-        }
-        .QFrame:hover {
-          background-color: rgb(238, 238, 238);
-        }
-        """
-      )
-    self.downloadCards[pos]["select"] = not select
-
-  def up(self, pos):
-    pass
-  
-  def down(self, pos):
-    pass
-
-  def edit(self, pos):
-    pass
-
-  def delete(self, pos):
-    pass
-
-  def add(self):
-    self.child = CreateDownload(self)
-
-  def addDownload(self, name, uid, type):
+  def addDownloadCard(self, name, uid, route):
     # 一个下载卡片
     downloadBox = QFrame()
     downloadLayout = QVBoxLayout()
@@ -562,6 +362,7 @@ class Download(QFrame):
     accountID.setFont(Font.LEVEL3)
     upIcon = QIcon("icons/up.svg")
     upButton = QPushButton()
+    upButton.setToolTip("上移")
     upButton.setIcon(upIcon)
     upButton.setIconSize(QtCore.QSize(12, 12))
     upButton.setStyleSheet(
@@ -581,6 +382,7 @@ class Download(QFrame):
     )
     downIcon = QIcon("icons/down.svg")
     downButton = QPushButton()
+    downButton.setToolTip("下移")
     downButton.setIcon(downIcon)
     downButton.setIconSize(QtCore.QSize(12, 12))
     downButton.setStyleSheet(
@@ -600,6 +402,7 @@ class Download(QFrame):
     )
     editIcon = QIcon("icons/edit.svg")
     editButton = QPushButton()
+    editButton.setToolTip("编辑")
     editButton.setIcon(editIcon)
     editButton.setIconSize(QtCore.QSize(12, 12))
     editButton.setStyleSheet(
@@ -619,6 +422,7 @@ class Download(QFrame):
     )
     deleteIcon = QIcon("icons/delete.svg")
     deleteButton = QPushButton()
+    deleteButton.setToolTip("删除")
     deleteButton.setIcon(deleteIcon)
     deleteButton.setIconSize(QtCore.QSize(12, 12))
     deleteButton.setStyleSheet(
@@ -636,10 +440,22 @@ class Download(QFrame):
       }
       """
     )
-    uidLabel = QLabel("用户ID：{}".format(uid))
-    typeLabel = QLabel("类  型：{}".format(type))
+    uidName = QLabel("用户UID：")
+    typeName = QLabel("类   型：")
+    uidLabel = QLabel(uid)
+    typeLabel = QLabel(route)
+    uidName.setFont(Font.LEVEL4)
+    typeName.setFont(Font.LEVEL4)
     typeLabel.setFont(Font.LEVEL4)
     uidLabel.setFont(Font.LEVEL4)
+    hbox = QHBoxLayout()
+    gridBox = QGridLayout()
+    gridBox.addWidget(uidName, 0, 0)
+    gridBox.addWidget(uidLabel, 0, 1)
+    gridBox.addWidget(typeName, 1, 0)
+    gridBox.addWidget(typeLabel, 1, 1)
+    hbox.addLayout(gridBox)
+    hbox.addStretch(1)
     # 将各个组件加入其中
     titleLine.addWidget(comboButton)
     titleLine.addWidget(accountID)
@@ -650,8 +466,7 @@ class Download(QFrame):
     titleLine.addWidget(deleteButton)
     downloadLayout.addLayout(titleLine)
     downloadLayout.addSpacing(4)
-    downloadLayout.addWidget(uidLabel)
-    downloadLayout.addWidget(typeLabel)
+    downloadLayout.addLayout(hbox)
     downloadLayout.setContentsMargins(6, 6, 6, 6)
     downloadLayout.setSpacing(4)
     downloadBox.setLayout(downloadLayout)
@@ -690,21 +505,96 @@ class Download(QFrame):
       "type": typeLabel,
       "name": accountID
     })
-
     pos = len(self.downloadCards) - 1
-    comboButton = self.downloadCards[pos]["combo"]
-    downloadBox = self.downloadCards[pos]["download"]
-    upButton = self.downloadCards[pos]["up"]
-    downButton = self.downloadCards[pos]["down"]
-    editButton = self.downloadCards[pos]["edit"]
-    deleteButton = self.downloadCards[pos]["delete"]
     comboButton.clicked.connect(lambda val, _pos = pos: self.switch(_pos))
     downloadBox.mousePressEvent = lambda val, _pos = pos: self.switch(_pos)
     upButton.clicked.connect(lambda val, _pos = pos: self.up(_pos))
     downButton.clicked.connect(lambda val, _pos = pos: self.down(_pos))
     editButton.clicked.connect(lambda val, _pos = pos: self.edit(_pos))
     deleteButton.clicked.connect(lambda val, _pos = pos: self.delete(_pos))
+    # 需实时刷新页面，然后调整大小，否则当事件触发结束时才会更新界面，导致下面的大小调整失效
+    QApplication.processEvents()
+    self.scroll_widget.adjustSize()
     
+  def editDownloadCard(self, pos, name, uid, type):
+    item = self.downloadCards[pos]
+    item["name"].setText(name)
+    item["uid"].setText(uid)
+    item["type"].setText(type)
+
+  # 更换下载选项卡的选择
+  def switch(self, pos):
+    comboButton = self.downloadCards[pos]["combo"]
+    downloadBox = self.downloadCards[pos]["download"]
+    select = self.downloadCards[pos]["select"]
+    if not select:
+      comboIcon = QIcon("icons/combox_select.svg")
+      comboButton.setIcon(comboIcon)
+      downloadBox.setStyleSheet(
+        """
+        .QFrame {
+          background-color: #e8f0ff;
+        }
+        """
+      )
+    else:
+      comboIcon = QIcon("icons/combox.svg")
+      comboButton.setIcon(comboIcon)
+      downloadBox.setStyleSheet(
+        """
+        .QFrame {
+          background-color: transparent;
+        }
+        .QFrame:hover {
+          background-color: rgb(238, 238, 238);
+        }
+        """
+      )
+    self.downloadCards[pos]["select"] = not select
+    self.stateChange()
+
+  def up(self, pos):
+    pass
+  
+  def down(self, pos):
+    pass
+
+  def edit(self, pos):
+    name = self.downloadCards[pos]["name"].text()
+    uid = self.downloadCards[pos]["uid"].text()
+    type = self.downloadCards[pos]["type"].text()
+    self.child = CreateDownload(self, name, uid, type, pos)
+
+  def delete(self, pos):
+    self.downloadCards[pos]["download"].setParent(None)
+    self.downloadCards.remove(self.downloadCards[pos])
+    for i in range(len(self.downloadCards)):
+      self.downloadCards[i]["combo"].clicked.disconnect()
+      self.downloadCards[i]["download"].mousePressEvent = lambda val, _pos = i: self.switch(_pos)
+      self.downloadCards[i]["up"].clicked.disconnect()
+      self.downloadCards[i]["down"].clicked.disconnect()
+      self.downloadCards[i]["edit"].clicked.disconnect()
+      self.downloadCards[i]["delete"].clicked.disconnect()
+      self.downloadCards[i]["combo"].clicked.connect(lambda val, _pos = i: self.switch(_pos))
+      self.downloadCards[i]["download"].mousePressEvent = lambda val, _pos = i: self.switch(_pos)
+      self.downloadCards[i]["up"].clicked.connect(lambda val, _pos = i: self.up(_pos))
+      self.downloadCards[i]["down"].clicked.connect(lambda val, _pos = i: self.down(_pos))
+      self.downloadCards[i]["edit"].clicked.connect(lambda val, _pos = i: self.edit(_pos))
+      self.downloadCards[i]["delete"].clicked.connect(lambda val, _pos = i: self.delete(_pos))
+    self.scroll_widget.adjustSize()
+    self.stateChange()
+
+  def add(self):
+    self.child = CreateDownload(self)
+    
+  def deleteSelect(self):
+    while True:
+      for pos in range(len(self.downloadCards)):
+        if self.downloadCards[pos]["select"]:
+          self.delete(pos)
+          break
+      else:
+        break
 
   def save(self):
     downloadList = []
@@ -718,6 +608,14 @@ class Download(QFrame):
         "url": url
       })
     base_config["__main__"]["main"]["download_list"] = downloadList
+
+  def stateChange(self):
+    for item in self.downloadCards:
+      if item["select"]:
+        self.deleteButton.setDisabled(False)
+        break
+    else:
+      self.deleteButton.setDisabled(True)
 
   # 获取组件当前是否可以切走
   def canSwitchOut(self):

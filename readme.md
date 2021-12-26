@@ -179,7 +179,7 @@ pixiv_download
 - [x] 补充可视化客户端的日志模块
 - [x] 将所有可配置项加入设置功能中
 - [x] 在可视化客户端账户功能
-- [ ] 在可视化客户端增加下载管理功能
+- [ ] 在可视化客户端增加下载管理功能：上下移动和启动尚未完成
 - [ ] 在可视化客户端增加阅览功能
 - [ ] Linux与Mac平台的适配性
 
@@ -208,3 +208,4 @@ pixiv_download
 - [x] account区分网络错误和账户错误
 - [x] component改名
 - [x] 当Account和Setting保存的时候写一下日志即可，其他有报错的地方写一下日志即可
+- [x] 事件处理的过程中不会更新界面，导致`adjustSize`失效，解决方法：`QApplication.processEvents()`
