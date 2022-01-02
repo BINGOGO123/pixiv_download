@@ -632,7 +632,7 @@ class Setting(QFrame):
     if alert:
       box = QMessageBox(self)
       box.setText("是否保存修改的设置信息？")
-      box.setWindowTitle("Pixiv下载工具")
+      box.setWindowTitle(" Pixiv下载工具")
       box.setFont(Font.LEVEL3)
       yesButton = box.addButton("是(Y)", QMessageBox.ButtonRole.AcceptRole)
       noButton = box.addButton("否(N)", QMessageBox.ButtonRole.RejectRole)
@@ -667,7 +667,7 @@ class Setting(QFrame):
         cover(base_config, backup)
         box = QMessageBox(self)
         box.setText(f"保存失败: {str(e)}")
-        box.setWindowTitle("Pixiv下载工具")
+        box.setWindowTitle(" Pixiv下载工具")
         box.setFont(Font.LEVEL3)
         okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
         okButton.setFont(Font.LEVEL4)
@@ -686,7 +686,7 @@ class Setting(QFrame):
         self.settingChanged()
         # box = QMessageBox(self)
         # box.setText(f"配置文件保存成功")
-        # box.setWindowTitle("Pixiv下载工具")
+        # box.setWindowTitle(" Pixiv下载工具")
         # box.setFont(Font.LEVEL3)
         # okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
         # okButton.setFont(Font.LEVEL4)
@@ -709,7 +709,7 @@ class Setting(QFrame):
     if alert:
       box = QMessageBox(self)
       box.setText("是否放弃当前所有修改？")
-      box.setWindowTitle("Pixiv下载工具")
+      box.setWindowTitle(" Pixiv下载工具")
       box.setFont(Font.LEVEL3)
       yesButton = box.addButton("是(Y)", QMessageBox.ButtonRole.AcceptRole)
       noButton = box.addButton("否(N)", QMessageBox.ButtonRole.RejectRole)
@@ -744,7 +744,7 @@ class Setting(QFrame):
     if alert:
       box = QMessageBox(self)
       box.setText("是否重置所有配置信息？")
-      box.setWindowTitle("Pixiv下载工具")
+      box.setWindowTitle(" Pixiv下载工具")
       box.setFont(Font.LEVEL3)
       yesButton = box.addButton("是(Y)", QMessageBox.ButtonRole.AcceptRole)
       noButton = box.addButton("否(N)", QMessageBox.ButtonRole.RejectRole)
@@ -782,7 +782,7 @@ class Setting(QFrame):
     if self.changed:
       box = QMessageBox(self)
       box.setText("当前修改尚未保存，是否保存？")
-      box.setWindowTitle("Pixiv下载工具")
+      box.setWindowTitle(" Pixiv下载工具")
       box.setFont(Font.LEVEL3)
       saveButton = box.addButton("保存(S)", QMessageBox.ButtonRole.AcceptRole)
       cancelButton = box.addButton("放弃(N)", QMessageBox.ButtonRole.DestructiveRole)

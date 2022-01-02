@@ -1,11 +1,12 @@
 # 下载管理界面
 
+import os
 import sys
 import PyQt6
 from PyQt6 import QtCore
 from PyQt6.QtCore import QFileSelector, QRegularExpression
 from PyQt6.QtGui import QColor, QCursor, QFont, QIcon, QImage, QIntValidator, QPixmap, QRegularExpressionValidator, QTextCursor, QTextLine, QValidator
-from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QPushButton, QScrollArea, QScrollBar, QScroller, QVBoxLayout, QWidget, QPlainTextEdit
+from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QMessageBox, QPushButton, QScrollArea, QScrollBar, QScroller, QVBoxLayout, QWidget, QPlainTextEdit
 
 from spider.Spider import Spider
 from .component.Font import Font
@@ -13,19 +14,19 @@ from .component.LineEdit import LineEdit
 from .component.ComboBox import ComboBox
 from config import base_config
 from . import logger
+from tool.tool import saveJson
 
 
 class CreateDownload(QWidget):
-  def __init__(self, upper, name = "", uid = "", type = "bookmarks/artworks", pos = None, *args):
+  def __init__(self, upper, name = "", uid = "", type = "bookmarks/artworks", pos = None, title = "新建下载对象", *args):
     super().__init__(*args)
     self.upper = upper
-    self.pos = pos
-    self.initUI(name, uid, type)
+    self.initUI(name, uid, type, pos, title)
     self.changeState()
     self.show()
-  def initUI(self, name, uid, type):
+  def initUI(self, name, uid, type, pos, title):
     self.setWindowIcon(QIcon("icons/pixiv.svg"))
-    self.setWindowTitle(" 新建下载对象")
+    self.setWindowTitle(" " + title)
     self.setFixedSize(300, 160)
     self.setWindowFlag(QtCore.Qt.WindowType.Dialog)
     self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
@@ -98,8 +99,8 @@ class CreateDownload(QWidget):
     vbox.addStretch(1)
     self.setLayout(hbox)
     self.quitButton.clicked.connect(self.close)
-    if self.pos != None:
-      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.editDownloadCard(self.pos, *self.getInfo())))
+    if pos != None:
+      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.editDownloadCard(pos, *self.getInfo())))
     else:
       self.saveButton.clicked.connect(lambda : (self.close(), self.upper.addDownloadCard(*self.getInfo())))
   def getInfo(self):
@@ -515,6 +516,8 @@ class Download(QFrame):
     # 需实时刷新页面，然后调整大小，否则当事件触发结束时才会更新界面，导致下面的大小调整失效
     QApplication.processEvents()
     self.scroll_widget.adjustSize()
+    # 将滚动条下滑到底部位置
+    self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
     
   def editDownloadCard(self, pos, name, uid, type):
     item = self.downloadCards[pos]
@@ -554,23 +557,58 @@ class Download(QFrame):
     self.stateChange()
 
   def up(self, pos):
-    pass
+    if pos <= 0:
+      return
+    self.downloadCards[pos]["download"].setParent(None)
+    item = self.downloadCards.pop(pos)
+    self.downloadCards.insert(pos - 1, item)
+    self.layout.insertWidget(pos - 1, item["download"])
+    # 重新绑定功能按键
+    for i in range(len(self.downloadCards)):
+      self.downloadCards[i]["combo"].clicked.disconnect()
+      self.downloadCards[i]["up"].clicked.disconnect()
+      self.downloadCards[i]["down"].clicked.disconnect()
+      self.downloadCards[i]["edit"].clicked.disconnect()
+      self.downloadCards[i]["delete"].clicked.disconnect()
+      self.downloadCards[i]["combo"].clicked.connect(lambda val, _pos = i: self.switch(_pos))
+      self.downloadCards[i]["download"].mousePressEvent = lambda val, _pos = i: self.switch(_pos)
+      self.downloadCards[i]["up"].clicked.connect(lambda val, _pos = i: self.up(_pos))
+      self.downloadCards[i]["down"].clicked.connect(lambda val, _pos = i: self.down(_pos))
+      self.downloadCards[i]["edit"].clicked.connect(lambda val, _pos = i: self.edit(_pos))
+      self.downloadCards[i]["delete"].clicked.connect(lambda val, _pos = i: self.delete(_pos))
   
   def down(self, pos):
-    pass
+    if pos >= len(self.downloadCards) - 1:
+      return
+    self.downloadCards[pos]["download"].setParent(None)
+    item = self.downloadCards.pop(pos)
+    self.downloadCards.insert(pos + 1, item)
+    self.layout.insertWidget(pos + 1, item["download"])
+    # 重新绑定功能按键
+    for i in range(len(self.downloadCards)):
+      self.downloadCards[i]["combo"].clicked.disconnect()
+      self.downloadCards[i]["up"].clicked.disconnect()
+      self.downloadCards[i]["down"].clicked.disconnect()
+      self.downloadCards[i]["edit"].clicked.disconnect()
+      self.downloadCards[i]["delete"].clicked.disconnect()
+      self.downloadCards[i]["combo"].clicked.connect(lambda val, _pos = i: self.switch(_pos))
+      self.downloadCards[i]["download"].mousePressEvent = lambda val, _pos = i: self.switch(_pos)
+      self.downloadCards[i]["up"].clicked.connect(lambda val, _pos = i: self.up(_pos))
+      self.downloadCards[i]["down"].clicked.connect(lambda val, _pos = i: self.down(_pos))
+      self.downloadCards[i]["edit"].clicked.connect(lambda val, _pos = i: self.edit(_pos))
+      self.downloadCards[i]["delete"].clicked.connect(lambda val, _pos = i: self.delete(_pos))
 
   def edit(self, pos):
     name = self.downloadCards[pos]["name"].text()
     uid = self.downloadCards[pos]["uid"].text()
     type = self.downloadCards[pos]["type"].text()
-    self.child = CreateDownload(self, name, uid, type, pos)
+    self.child = CreateDownload(self, name, uid, type, pos, "编辑下载对象")
 
   def delete(self, pos):
     self.downloadCards[pos]["download"].setParent(None)
-    self.downloadCards.remove(self.downloadCards[pos])
+    self.downloadCards.pop(pos)
     for i in range(len(self.downloadCards)):
       self.downloadCards[i]["combo"].clicked.disconnect()
-      self.downloadCards[i]["download"].mousePressEvent = lambda val, _pos = i: self.switch(_pos)
       self.downloadCards[i]["up"].clicked.disconnect()
       self.downloadCards[i]["down"].clicked.disconnect()
       self.downloadCards[i]["edit"].clicked.disconnect()
@@ -607,7 +645,33 @@ class Download(QFrame):
         "name": nameLabel.text(),
         "url": url
       })
-    base_config["__main__"]["main"]["download_list"] = downloadList
+    # 备份
+    backup = base_config["__main__"]["main"]["download_list"]
+    try:
+      base_config["__main__"]["main"]["download_list"] = downloadList
+      saveJson(base_config, os.path.abspath("config.json"))
+    except Exception as e:
+      logger.error("下载配置保存失败")
+      base_config["__main__"]["main"]["download_list"] = backup
+      box = QMessageBox(self)
+      box.setText(f"修改失败: {str(e)}")
+      box.setWindowTitle(" Pixiv下载工具")
+      box.setFont(Font.LEVEL3)
+      okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
+      okButton.setFont(Font.LEVEL4)
+      box.setDefaultButton(okButton)
+      box.setStyleSheet(
+        """
+        QLabel {
+          color: red;
+        }
+        """
+      )
+      box.exec()
+      return False
+    else:
+      logger.info("下载配置保存成功")
+      return True
 
   def stateChange(self):
     for item in self.downloadCards:

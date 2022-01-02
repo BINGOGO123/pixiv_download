@@ -48,7 +48,7 @@ class LineEdit(QFrame):
     if self.number and self.letter:
       self.edit.setValidator(QRegularExpressionValidator(QRegularExpression('^\w*$')))
     elif self.number:
-      self.edit.setValidator(QRegularExpressionValidator(QRegularExpression('^[1-9]\d{0,5}$')))
+      self.edit.setValidator(QRegularExpressionValidator(QRegularExpression('^[1-9]\d{0,10}$')))
       # self.edit.setValidator(QIntValidator(0, 1000))
     elif self.letter:
       self.edit.setValidator(QRegularExpressionValidator(QRegularExpression('^[a-zA-Z]*$')))

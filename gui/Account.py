@@ -155,7 +155,7 @@ class Account(QFrame):
       base_config["spider"]["cookie"] =previous_cookie
       box = QMessageBox(self)
       box.setText(f"保存失败: {str(e)}")
-      box.setWindowTitle("Pixiv下载工具")
+      box.setWindowTitle(" Pixiv下载工具")
       box.setFont(Font.LEVEL3)
       okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
       okButton.setFont(Font.LEVEL4)
@@ -171,7 +171,7 @@ class Account(QFrame):
       box.exec()
       return False
     else:
-      logger.error("账户保存成功")
+      logger.info("账户保存成功")
       # 更新changed状态
       self.checkValue()
       # 验证账户状态
@@ -385,7 +385,7 @@ class Account(QFrame):
     if self.changed:
       box = QMessageBox(self)
       box.setText("COOKIE修改后尚未保存，是否保存？")
-      box.setWindowTitle("Pixiv下载工具")
+      box.setWindowTitle(" Pixiv下载工具")
       box.setFont(Font.LEVEL3)
       saveButton = box.addButton("保存(S)", QMessageBox.ButtonRole.AcceptRole)
       cancelButton = box.addButton("放弃(N)", QMessageBox.ButtonRole.DestructiveRole)
