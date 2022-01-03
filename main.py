@@ -13,7 +13,17 @@ if __name__ == "__main__":
     if config.get("download_list") != None:
       print("config = {}".format(config))
       spider = Spider()
-      for url in config["download_list"]:
+      for item in config["download_list"]:
+        if type(item) == dict:
+          url = item.get("url")
+          if url == None:
+            print("下载项[{}]没有url项，跳过\n".format(item))
+            continue
+        elif type(item) == str:
+          url = item
+        else:
+          print("下载项[{}]格式错误，跳过\n".format(item))
+          continue
         spider.download(url)
     else:
       print("请输入url")

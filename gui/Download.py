@@ -100,9 +100,9 @@ class CreateDownload(QWidget):
     self.setLayout(hbox)
     self.quitButton.clicked.connect(self.close)
     if pos != None:
-      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.editDownloadCard(pos, *self.getInfo())))
+      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.editItem(pos, *self.getInfo())))
     else:
-      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.addDownloadCard(*self.getInfo())))
+      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.addItem(*self.getInfo())))
   def getInfo(self):
     return [self.nameEdit.getValue(), self.uidEdit.getValue(), self.typeEdit.getValue()]
   def changeState(self):
@@ -153,7 +153,8 @@ class Download(QFrame):
         logger.error("{} 类型错误".format(item))
         continue
       self.addDownloadCard(name, uid, route)
-    layout.addStretch(1)
+    # 加了这个会导致后续难以增加新的下载项（位置错乱），而且不加这个也不会影响布局，所以注释掉了
+    # layout.addStretch(1)
 
     layout_function = QHBoxLayout()
     startIcon = QIcon("icons/start.svg")
@@ -519,11 +520,28 @@ class Download(QFrame):
     # 将滚动条下滑到底部位置
     self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
     
-  def editDownloadCard(self, pos, name, uid, type):
+  def editItem(self, pos, name, uid, type):
     item = self.downloadCards[pos]
+    nameBackup = item["name"].text()
+    uidBackup = item["uid"].text()
+    typeBackup = item["type"].text()
     item["name"].setText(name)
     item["uid"].setText(uid)
     item["type"].setText(type)
+    # 如果保存失败则回退修改
+    if self.save() == False:
+      item["name"].setText(nameBackup)
+      item["uid"].setText(uidBackup)
+      item["type"].setText(typeBackup)
+
+  def addItem(self, name, uid, type):
+    self.addDownloadCard(name, uid, type)
+    # 尝试保存，若失败则回退操作
+    if self.save() == False:
+      item = self.downloadCards.pop(len(self.downloadCards) - 1)
+      item["download"].setParent(None)
+      self.scroll_widget.adjustSize()
+      return
 
   # 更换下载选项卡的选择
   def switch(self, pos):
@@ -559,9 +577,13 @@ class Download(QFrame):
   def up(self, pos):
     if pos <= 0:
       return
-    self.downloadCards[pos]["download"].setParent(None)
     item = self.downloadCards.pop(pos)
     self.downloadCards.insert(pos - 1, item)
+    # 如果保存失败，则回退操作并返回
+    if self.save() == False:
+      self.downloadCards.insert(pos, self.downloadCards.pop(pos - 1))
+      return
+    item["download"].setParent(None)
     self.layout.insertWidget(pos - 1, item["download"])
     # 重新绑定功能按键
     for i in range(len(self.downloadCards)):
@@ -580,9 +602,13 @@ class Download(QFrame):
   def down(self, pos):
     if pos >= len(self.downloadCards) - 1:
       return
-    self.downloadCards[pos]["download"].setParent(None)
     item = self.downloadCards.pop(pos)
     self.downloadCards.insert(pos + 1, item)
+    # 如果保存失败，则回退操作并返回
+    if self.save() == False:
+      self.downloadCards.insert(pos, self.downloadCards.pop(pos + 1))
+      return
+    item["download"].setParent(None)
     self.layout.insertWidget(pos + 1, item["download"])
     # 重新绑定功能按键
     for i in range(len(self.downloadCards)):
@@ -605,8 +631,12 @@ class Download(QFrame):
     self.child = CreateDownload(self, name, uid, type, pos, "编辑下载对象")
 
   def delete(self, pos):
-    self.downloadCards[pos]["download"].setParent(None)
-    self.downloadCards.pop(pos)
+    item = self.downloadCards.pop(pos)
+    # 如果保存失败，则回退操作并返回
+    if self.save() == False:
+      self.downloadCards.insert(pos, item)
+      return
+    item["download"].setParent(None)
     for i in range(len(self.downloadCards)):
       self.downloadCards[i]["combo"].clicked.disconnect()
       self.downloadCards[i]["up"].clicked.disconnect()
@@ -626,13 +656,42 @@ class Download(QFrame):
     self.child = CreateDownload(self)
     
   def deleteSelect(self):
-    while True:
-      for pos in range(len(self.downloadCards)):
-        if self.downloadCards[pos]["select"]:
-          self.delete(pos)
-          break
-      else:
-        break
+    # 获取待删除列表
+    deleteList = []
+    for pos in range(len(self.downloadCards)):
+      if self.downloadCards[pos]["select"]:
+        deleteList.insert(0, pos)
+    # 将所有元素弹出存储
+    itemList = []
+    for pos in deleteList:
+      itemList.append(self.downloadCards.pop(pos))
+    # 如果保存失败，则回退操作并返回
+    if self.save() == False:
+      for i in reversed(range(len(deleteList))):
+        pos = deleteList[i]
+        item = itemList[i]
+        self.downloadCards.insert(pos, item)
+      return
+    # 删除每个item
+    for item in itemList:
+      item["download"].setParent(None)
+    # 重新绑定功能
+    for i in range(len(self.downloadCards)):
+      self.downloadCards[i]["combo"].clicked.disconnect()
+      self.downloadCards[i]["up"].clicked.disconnect()
+      self.downloadCards[i]["down"].clicked.disconnect()
+      self.downloadCards[i]["edit"].clicked.disconnect()
+      self.downloadCards[i]["delete"].clicked.disconnect()
+      self.downloadCards[i]["combo"].clicked.connect(lambda val, _pos = i: self.switch(_pos))
+      self.downloadCards[i]["download"].mousePressEvent = lambda val, _pos = i: self.switch(_pos)
+      self.downloadCards[i]["up"].clicked.connect(lambda val, _pos = i: self.up(_pos))
+      self.downloadCards[i]["down"].clicked.connect(lambda val, _pos = i: self.down(_pos))
+      self.downloadCards[i]["edit"].clicked.connect(lambda val, _pos = i: self.edit(_pos))
+      self.downloadCards[i]["delete"].clicked.connect(lambda val, _pos = i: self.delete(_pos))
+    # 调整scroll大小
+    self.scroll_widget.adjustSize()
+    # 更改按钮状态
+    self.stateChange()
 
   def save(self):
     downloadList = []

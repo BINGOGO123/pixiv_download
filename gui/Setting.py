@@ -155,9 +155,9 @@ class Setting(QFrame):
       section["title"].setText("mysql")
       section["title"].setFont(Font.LEVEL3)
       section["content"] = [
-        Setting.SLineEdit(self.outer, "host", self.params + ["mysql", "host"], True, True),
-        Setting.SLineEdit(self.outer, "port", self.params + ["mysql", "port"], True),
-        Setting.SLineEdit(self.outer, "user", self.params + ["mysql", "user"], True, True),
+        Setting.SLineEdit(self.outer, "host    ", self.params + ["mysql", "host"], True, True),
+        Setting.SLineEdit(self.outer, "port    ", self.params + ["mysql", "port"], True),
+        Setting.SLineEdit(self.outer, "user    ", self.params + ["mysql", "user"], True, True),
         Setting.SLineEdit(self.outer, "password", self.params + ["mysql", "password"], True, True, True),
         Setting.SLineEdit(self.outer, "database", self.params + ["mysql", "db"], True, True)
       ]
