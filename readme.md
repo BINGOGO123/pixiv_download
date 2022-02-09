@@ -209,3 +209,19 @@ pixiv_download
 - [x] component改名
 - [x] 当Account和Setting保存的时候写一下日志即可，其他有报错的地方写一下日志即可
 - [x] 事件处理的过程中不会更新界面，导致`adjustSize`失效，解决方法：`QApplication.processEvents()`
+- [x] 下载开始和结束标志
+- [x] 序号编号方式更改
+- [x] 新增记录后自动滑到底部
+- [x] 新增删除记录按钮
+- [ ] 增加小说显示
+- [ ] 图片不显示：qt.gui.imageio: QImageIOHandler: Rejecting image as it exceeds the current allocation limit of 128 megabytes
+- [ ] 右边显示数量少时高度问题
+- [ ] DownloadItem宽度以父亲宽度优先
+## 经验总结
+
+### 使`QScrollArea`中的`QWidget`与父亲等宽或等高（即与普通组件一样自适应父亲的高度和宽度）
+
+```python
+scroll = QScrollArea()
+scroll.setWidgetResizable(True)
+```

@@ -6,6 +6,7 @@ from PyQt6.QtGui import QColor, QIcon
 from PyQt6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QPushButton, QVBoxLayout
 from .component.Font import Font
 from .Account import Account
+from .Download import Download
 
 class Side(QFrame):
 
@@ -13,6 +14,10 @@ class Side(QFrame):
     super().__init__(*args)
     # inform负责通知父亲选项切换
     self.inform = inform
+    # 记录定时器
+    self.timeID = None
+    # 定时器信息记录
+    self.count = 0
     self.initUI()
 
 
@@ -142,4 +147,111 @@ class Side(QFrame):
       userIcon = QIcon("icons/error.svg")
     self.buttonList[0].setIcon(userIcon)
     self.buttonList[0].setIconSize(QSize(60, 60))
+
+
+  # 下载图标的反转动画
+  def timerEvent(self, a0):
+    if self.count == 1:
+      downloadIcon = QIcon("icons/downloading.svg")
+      self.count = 0
+    else:
+      downloadIcon = QIcon("icons/downloading_reverse.svg")
+      self.count = 1
+    self.buttonList[1].setIcon(downloadIcon)
+
+
+  # 下载状态更改
+  def downloadStateChange(self, state):
+    # 停止计时器
+    self.count = 0
+    if self.timeID != None:
+      self.killTimer(self.timeID)
+      self.timeID = None
+    if state == Download.State.DOWNLOADING:
+      downloadIcon = QIcon("icons/downloading.svg")
+      buttonStyle = """
+      QPushButton {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        background-color: rgb(245, 245, 245);
+        border-bottom-width: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: rgb(220, 220, 220);
+        border: none;
+        color: #1296db;
+      }
+      QPushButton:hover {
+        background-color: rgb(230, 230, 230);
+      }
+      QPushButton:checked {
+        background-color: rgb(220, 220, 220);
+      }
+      """
+      self.timeID = self.startTimer(500)
+      self.buttonList[1].setText(" 下载中")
+    elif state == Download.State.STOPPING:
+      downloadIcon = QIcon("icons/terminate.svg")
+      buttonStyle = """
+      QPushButton {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        background-color: rgb(245, 245, 245);
+        border-bottom-width: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: rgb(220, 220, 220);
+        border: none;
+        color: #d81e06;
+      }
+      QPushButton:hover {
+        background-color: rgb(230, 230, 230);
+      }
+      QPushButton:checked {
+        background-color: rgb(220, 220, 220);
+      }
+      """
+      self.buttonList[1].setText(" 终止中")
+    elif type(state) != Download.State:
+      downloadIcon = QIcon("icons/cry.svg")
+      buttonStyle = """
+      QPushButton {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        background-color: rgb(245, 245, 245);
+        border-bottom-width: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: rgb(220, 220, 220);
+        border: none;
+        color: #d81e06;
+      }
+      QPushButton:hover {
+        background-color: rgb(230, 230, 230);
+      }
+      QPushButton:checked {
+        background-color: rgb(220, 220, 220);
+      }
+      """
+      self.buttonList[1].setText(" 出错")
+    else:
+      downloadIcon = QIcon("icons/download.svg")
+      buttonStyle = """
+      QPushButton {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        background-color: rgb(245, 245, 245);
+        border-bottom-width: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: rgb(220, 220, 220);
+        border: none;
+      }
+      QPushButton:hover {
+        background-color: rgb(230, 230, 230);
+      }
+      QPushButton:checked {
+        background-color: rgb(220, 220, 220);
+      }
+      """
+      self.buttonList[1].setText(" 下载")
+    self.buttonList[1].setIcon(downloadIcon)
+    self.buttonList[1].setStyleSheet(buttonStyle)
+
       

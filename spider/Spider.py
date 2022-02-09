@@ -26,7 +26,14 @@ class Spider:
   # 用来将路径中的非法字符替换掉
   __regular = re.compile(r"""[\\/:*?<>"|]""")
 
-  def __init__(self):
+  @classmethod
+  def getRoutes(cls):
+    """
+    返回所有可下载的路由类型，组成一个列表
+    """
+    return list(cls.__routes.keys());
+
+  def __init__(self, inform = None):
     """
     初始化spider对象
 
@@ -53,6 +60,9 @@ class Spider:
       "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64",
       # "x-user-id": self.config["your_uid"],
     }
+    # 通知选项
+    self.inform = inform
+    # 创建会话
     self.s = requests.session()
     self.s.headers.update(__headers)
     self.start_time = datetime.now()
@@ -243,6 +253,14 @@ class Spider:
     只要获取图片列表成功即为True
     """
     logger.info("download_image(pid={}, title={}, filepath={})".format(pid, title, filepath))
+    # 通知父亲新增图画页面
+    if self.inform != None:
+      self.inform({
+        "type": "gallery",
+        "update": False,
+        "title": title,
+        "url": "https://www.pixiv.net/artworks/{}".format(pid)
+      })
     # 获取这个poster页面内的所有图片url
     url = "https://www.pixiv.net/ajax/illust/{}/pages?lang=zh".format(pid)
     res = self.get_response(url)
@@ -275,6 +293,14 @@ class Spider:
       # 最终存储时相对路径转换为绝对路径
       storage_path = os.path.abspath(storage_path)
       logger.info("{}. storage_path={} image_url={}".format(i + 1, storage_path, image_url))
+      # 通知父亲新增图片
+      if self.inform != None:
+        self.inform({
+          "type": "image",
+          "update": False,
+          "url": image_url,
+          "method": "下载中"
+        })
 
       # 查询该路径是否下载了该image_url图片
       ret = self.database.escape_execute("select md5 from file where storage_path = {} and url = {}", storage_path, image_url)
@@ -283,11 +309,31 @@ class Spider:
           if self.compare_md5(storage_path, ret[0][0]) != False:
             logger.info("已存在且md5匹配，跳过")
             successful += 1
+            # 通知父亲更新刚才添加的图片
+            if self.inform != None:
+              self.inform({
+                "type": "image",
+                "update": True,
+                "url": image_url,
+                "path": storage_path,
+                "method": "已存在"
+              })
             continue
         else:
           logger.info("已存在，跳过")
           successful += 1
+          # 通知父亲更新刚才添加的图片
+          if self.inform != None:
+            self.inform({
+              "type": "image",
+              "update": True,
+              "url": image_url,
+              "path": storage_path,
+              "method": "已存在"
+            })
           continue
+      # 查询是否可从其他地方搬运，carry为True表示可从其他地方搬运
+      carry = False
       self.database.escape_execute("delete from file where storage_path = {}", storage_path)
       ret = self.database.escape_execute("select storage_path,md5 from file where url = {} and storage_path != {}", image_url, storage_path)
       if ret != False:
@@ -298,6 +344,7 @@ class Spider:
             content = self.compare_md5(one[0], "")
           if content != False:
             logger.info("搬运，图片存于{}".format(one[0]))
+            carry = True
             break
           else:
             # 此时说明文件不存在或者文件的md5与数据库的md5不吻合
@@ -306,11 +353,27 @@ class Spider:
         else:
           res = self.get_response(image_url)
           if res == False:
+            # 通知父亲更新刚才添加的图片
+            if self.inform != None:
+              self.inform({
+                "type": "image",
+                "update": True,
+                "url": image_url,
+                "method": "下载失败"
+              })
             continue
           content = res.content
       else:
         res = self.get_response(image_url)
         if res == False:
+          # 通知父亲更新刚才添加的图片
+          if self.inform != None:
+            self.inform({
+              "type": "image",
+              "update": True,
+              "url": image_url,
+              "method": "下载失败"
+            })
           continue
         content = res.content
       # 写入
@@ -320,7 +383,24 @@ class Spider:
         f.close()
       except PermissionError:
         logger.exception("文件写入失败")
+        # 通知父亲更新刚才添加的图片
+        if self.inform != None:
+          self.inform({
+            "type": "image",
+            "update": True,
+            "url": image_url,
+            "method": "写入失败"
+          })
         continue
+      # 通知父亲更新刚才添加的图片
+      if self.inform != None:
+        self.inform({
+          "type": "image",
+          "update": True,
+          "url": image_url,
+          "path": storage_path,
+          "method": "搬运完成" if carry else "下载完成"
+        })
       # 由于sqlite3的时区使用的不是本地时区，而mysql和python获取的时间均为本地时区，所以如果使用默认的download_time,会导致时间不一致，这里统一按照python代码获取的时间来存储和查询
       if False != self.database.escape_execute("insert into file (url, storage_path, md5, download_time) values ({}, {}, {}, {})", image_url, storage_path, get_md5(content), datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M:%S")):
         successful += 1

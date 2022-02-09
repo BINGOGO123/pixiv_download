@@ -419,7 +419,6 @@ class SpiderTest(threading.Thread):
     threading.Thread.__init__(self)
     self.target = target
     self.cookie = cookie
-    self.a = []
   
   def run(self):
     if self.cookie == "":

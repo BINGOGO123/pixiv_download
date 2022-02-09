@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
 
     # 右边区域
     account = Account(self.side.stateChange)
-    download = Download()
+    download = Download(self.side.downloadStateChange)
     view = View()
     setting = Setting()
     about = About()

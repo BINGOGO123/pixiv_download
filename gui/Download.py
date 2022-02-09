@@ -1,17 +1,23 @@
 # 下载管理界面
-
+from enum import Enum
 import os
 import sys
+import threading
+import time
 import PyQt6
 from PyQt6 import QtCore
-from PyQt6.QtCore import QFileSelector, QRegularExpression
+from PyQt6.QtCore import QFileSelector, QRegularExpression, QEvent
 from PyQt6.QtGui import QColor, QCursor, QFont, QIcon, QImage, QIntValidator, QPixmap, QRegularExpressionValidator, QTextCursor, QTextLine, QValidator
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QMessageBox, QPushButton, QScrollArea, QScrollBar, QScroller, QVBoxLayout, QWidget, QPlainTextEdit
+import ctypes
 
 from spider.Spider import Spider
 from .component.Font import Font
 from .component.LineEdit import LineEdit
 from .component.ComboBox import ComboBox
+from .component.DownloadItem import DownloadItem
+from .component.StartDownload import StartDownload
+from .component.EndDownload import EndDownload
 from config import base_config
 from . import logger
 from tool.tool import saveJson
@@ -43,7 +49,7 @@ class CreateDownload(QWidget):
     vbox.addStretch(1)
     self.nameEdit = LineEdit("名   称", name, self.changeState, Font.LEVEL4)
     self.uidEdit = LineEdit("用户UID", uid, self.changeState, Font.LEVEL4, True)
-    self.typeEdit = ComboBox("类   型", type, ["bookmarks/artworks", "bookmarks/novels", "illustrations", "novels"], self.changeState, Font.LEVEL4)
+    self.typeEdit = ComboBox("类   型", type, Spider.getRoutes(), self.changeState, Font.LEVEL4)
     vbox.addWidget(self.nameEdit)
     vbox.addWidget(self.uidEdit)
     vbox.addWidget(self.typeEdit)
@@ -114,11 +120,196 @@ class CreateDownload(QWidget):
     self.saveButton.setDisabled(False)
 
 class Download(QFrame):
+  class State(Enum):
+    SELECTED = "已选择"
+    NOT_SELECT = "未选择"
+    DOWNLOADING = "下载中"
+    STOPPING = "终止中"
 
-  def __init__(self, *args):
+
+  def customEvent(self, e):
+    if e.type() == StateChangeEvent.idType:
+      # 如果state不为None，则更改为state状态，否则根据选择状况更新state
+      if e.state != None:
+        self.state = e.state
+      else:
+        self.stateChange()
+    elif e.type() == AddContentEvent.idType:
+      content = e.content
+      update = content.get("update")
+      type = content.get("type")
+      if update == True:
+        if type == "image":
+          if len(self.downloadItemList) == 0:
+            logger.error("Download 更新image时gallery数量为0")
+            return
+          try:
+            url = str(content.get("url"))
+            path = None if content.get("path") == None else str(content.get("path"))
+            method = str(content.get("method"))
+          except Exception as e:
+            logger.error("Download 更新image时content格式错误，content={}".format(content))
+            return
+          imageCount = self.downloadItemList[-1].imageCount()
+          if imageCount == 0:
+            logger.error("Download 更新image时gallery中的image数量为0，content={}".format(content))
+            return
+          self.downloadItemList[-1].changeImage(imageCount - 1, url, path, method)
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        elif type == "novel":
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        else:
+          logger.error("Download 无法执行AddContentEvent操作，content={}".format(content))
+      else:
+        if type == "gallery":
+          try:
+            title = str(content.get("title"))
+            url = str(content.get("url"))
+          except Exception as e:
+            logger.error("Download 新增gallery时content格式错误，content={}".format(content))
+            return
+          imageList = []
+          downloadItem = DownloadItem(self.count, title, url, imageList)
+          self.scroll_info_layout.addWidget(downloadItem)
+          self.count += 1
+          self.downloadItemList.append(downloadItem)
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        elif type == "image":
+          if len(self.downloadItemList) == 0:
+            logger.error("Download 新增image时gallery数量为0")
+            return
+          try:
+            url = str(content.get("url"))
+            path = None if content.get("path") == None else str(content.get("path"))
+            method = str(content.get("method"))
+          except Exception as e:
+            logger.error("Download 新增image时content格式错误，content={}".format(content))
+            return
+          self.downloadItemList[-1].addImage(url, path, method)
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        elif type == "series":
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        elif type == "novel":
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        elif type == "start":
+          name = str(content.get("name"))
+          uid = str(content.get("uid"))
+          route = str(content.get("route"))
+          self.scroll_info_layout.addWidget(StartDownload(name, uid, route))
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        elif type == "end":
+          name = str(content.get("name"))
+          uid = str(content.get("uid"))
+          route = str(content.get("route"))
+          self.scroll_info_layout.addWidget(EndDownload(name, uid, route))
+          # 刷新页面并滑到底部
+          QApplication.processEvents()
+          self.scroll_info_frame.adjustSize()
+          self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        else:
+          logger.error("Download 无法执行AddContentEvent操作，content={}".format(content))
+
+
+  @property
+  def state(self):
+    return self._state
+  @state.setter
+  def state(self, new_val):
+    self._state = new_val
+    if self._state == self.State.NOT_SELECT:
+      startIcon = QIcon("icons/start.svg")
+      self.startButton.setIcon(startIcon)
+      self.startButton.disconnect()
+      self.startButton.clicked.connect(self.startAllDownload)
+      self.startButton.setDisabled(True)
+      self.startButton.setToolTip("选择下载项后下载")
+      self.deleteButton.setDisabled(True)
+      self.deleteButton.setToolTip("选择下载项后删除")
+      self.addButton.setDisabled(False)
+      self.scroll_widget.setDisabled(False)
+      self.clearButton.setDisabled(False)
+    elif self._state == self.State.SELECTED:
+      startIcon = QIcon("icons/start.svg")
+      self.startButton.setIcon(startIcon)
+      self.startButton.disconnect()
+      self.startButton.clicked.connect(self.startAllDownload)
+      self.startButton.setDisabled(False)
+      self.startButton.setToolTip("开始所选下载项")
+      self.deleteButton.setDisabled(False)
+      self.deleteButton.setToolTip("删除所选下载项")
+      self.addButton.setDisabled(False)
+      self.scroll_widget.setDisabled(False)
+      self.clearButton.setDisabled(False)
+    elif self._state == self.State.DOWNLOADING:
+      startIcon = QIcon("icons/terminate.svg")
+      self.startButton.setIcon(startIcon)
+      self.startButton.disconnect()
+      self.startButton.clicked.connect(self.stopDownload)
+      self.startButton.setToolTip("正在下载")
+      self.deleteButton.setDisabled(True)
+      self.addButton.setDisabled(True)
+      self.scroll_widget.setDisabled(True)
+      self.clearButton.setDisabled(True)
+    elif self._state == self.State.STOPPING:
+      startIcon = QIcon("icons/terminate.svg")
+      self.startButton.setIcon(startIcon)
+      self.startButton.disconnect()
+      self.startButton.clicked.connect(self.stopDownload)
+      self.startButton.setToolTip("正在终止")
+      self.startButton.setDisabled(True)
+      self.deleteButton.setDisabled(True)
+      self.addButton.setDisabled(True)
+      self.scroll_widget.setDisabled(True)
+      self.clearButton.setDisabled(True)
+    # 未知状态
+    else:
+      logger.error("Download 未知状态：{}".format(self._state))
+      startIcon = QIcon("icons/start.svg")
+      self.startButton.setIcon(startIcon)
+      self.startButton.disconnect()
+      self.startButton.clicked.connect(self.startAllDownload)
+      self.startButton.setToolTip("选择下载项后下载")
+      self.startButton.setDisabled(True)
+      self.deleteButton.setToolTip("选择下载项后删除")
+      self.deleteButton.setDisabled(True)
+      self.addButton.setDisabled(True)
+      self.scroll_widget.setDisabled(True)
+      self.clearButton.setDisabled(False)
+    # 通知父亲状态改变
+    self.inform(self._state)
+
+  def __init__(self, inform, *args):
     super().__init__(*args)
-
+    self.inform = inform
+    # 下载线程
+    self.download = None
+    # 日志记录编号
+    self.count = 1
+    # 日志对象记录
+    self.downloadItemList = []
     self.initUI()
+    # 根据按钮状态更新state
     self.stateChange()
 
   def initUI(self):
@@ -177,25 +368,6 @@ class Download(QFrame):
       """
     )
     startButton.setIcon(startIcon)
-    terminateIcon = QIcon("icons/terminate.svg")
-    terminateButton = QPushButton()
-    terminateButton.setIconSize(QtCore.QSize(24, 24))
-    terminateButton.setStyleSheet(
-      """
-      QPushButton {
-        border: none;
-        padding: 2px; 
-        border-radius:3px;
-      }
-      QPushButton:hover {
-        background-color: rgb(200, 200, 200);
-      }
-      QPushButton:pressed {
-        background-color:rgb(150, 150, 150);
-      }
-      """
-    )
-    terminateButton.setIcon(terminateIcon)
     addIcon = QIcon("icons/add.svg")
     self.addButton = addButton = QPushButton()
     addButton.setToolTip("新建下载对象")
@@ -236,27 +408,78 @@ class Download(QFrame):
       """
     )
     deleteButton.setIcon(deleteIcon)
+    clearIcon = QIcon("icons/clear.svg")
+    self.clearButton = clearButton = QPushButton()
+    clearButton.setToolTip("删除所有下载记录")
+    clearButton.setIconSize(QtCore.QSize(24, 24))
+    clearButton.setStyleSheet(
+      """
+      QPushButton {
+        border: none;
+        padding: 2px; 
+        border-radius:3px;
+      }
+      QPushButton:hover {
+        background-color: rgb(200, 200, 200);
+      }
+      QPushButton:pressed {
+        background-color:rgb(150, 150, 150);
+      }
+      """
+    )
+    clearButton.setIcon(clearIcon)
     layout_function.addWidget(startButton)
     layout_function.addSpacing(5)
-    # layout_function.addWidget(terminateButton)
     # layout_function.addSpacing(5)
     layout_function.addWidget(addButton)
     layout_function.addSpacing(5)
     layout_function.addWidget(deleteButton)
     layout_function.addStretch(1)
+    layout_function.addSpacing(5)
+    layout_function.addWidget(clearButton)
     function_widget = QFrame()
     function_widget.setLayout(layout_function)
 
-    layout_display = QVBoxLayout()
-    layout_display.addWidget(QLabel("text"))
-    layout_display.addWidget(QLabel("text"))
-    layout_display.addWidget(QLabel("text"))
-    layout_display.addWidget(QLabel("text"))
-    layout_display.addWidget(QLabel("text"))
+    # 右边下载信息展示区域
+    self.scroll_info = scroll_info = QScrollArea()
+    self.scroll_info_frame = scroll_info_frame = QFrame()
+    self.scroll_info_layout = scroll_info_layout = QVBoxLayout()
+    # scroll_info_layout.addWidget(DownloadItem(
+    #   99999,
+    #   "一个下载项",
+    #   "https://wwww.bingoz.cn", [
+    #     {
+    #       "url": "https://wwww.bingoz.cn",
+    #       "path": r"""D:\project\pixiv_download\downloaded\55109945\bookmarks\artworks\裸足＋白丝⑤+布鲁马_84958496_1.jpg""",
+    #       "method": "下载"
+    #     },
+    #     {
+    #       "url": "https://wwww.bingoz.cn",
+    #       "path": r"""D:\project\pixiv_download\downloaded\55109945\bookmarks\artworks\裸足＋白丝⑤+布鲁马_84958496_1.jpg""",
+    #       "method": "下载"
+    #     },
+    #     {
+    #       "url": "https://wwww.bingoz.cn",
+    #       "path": r"""D:\project\pixiv_download\downloaded\55109945\bookmarks\artworks\裸足＋白丝⑤+布鲁马_84958496_1.jpg""",
+    #       "method": "下载"
+    #     }
+    #   ]
+    # ))
+    # scroll_info_layout.setContentsMargins(0, 0, 0, 0)
+    scroll_info_layout.setSpacing(10)
+    scroll_info_frame.setLayout(scroll_info_layout)
+    scroll_info_frame.setContentsMargins(0, 0, 0, 0)
+    # scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+    scroll_info.setWidget(scroll_info_frame)
+    scroll_info.setFrameShape(QFrame.Shape.NoFrame)
+    scroll_info.setWidgetResizable(True)
+    scroll_info.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
     # 功能区事件绑定
     addButton.clicked.connect(self.add)
     deleteButton.clicked.connect(self.deleteSelect)
+    startButton.clicked.connect(self.startAllDownload)
+    clearButton.clicked.connect(self.clearDownload)
 
     layout_final = QVBoxLayout()
     layout_final.addWidget(function_widget)
@@ -272,7 +495,7 @@ class Download(QFrame):
     # 设置没有边框
     scroll.setFrameShape(QFrame.Shape.NoFrame)
     layout_h.addWidget(scroll)
-    layout_h.addLayout(layout_display)
+    layout_h.addWidget(scroll_info)
     layout_h.setContentsMargins(0, 0, 0, 0)
     layout_h.setSpacing(0)
     layout_final.addLayout(layout_h)
@@ -281,6 +504,50 @@ class Download(QFrame):
     self.setLayout(layout_final)
 
     # 最终样式修改
+    scroll_info_frame.setStyleSheet(
+      """
+      QFrame {
+        background-color: transparent;
+      }
+      """
+    )
+    scroll_info.setStyleSheet(
+      """
+      QScrollArea {
+        background-color: transparent;
+      }
+      QScrollBar:vertical
+      {
+        width:6px;
+        background-color: rgb(200, 200, 200);
+      }
+      QScrollBar::handle:vertical
+      {
+        background-color: rgb(200, 200, 200);
+        margin-left:0px;
+        margin-right:0px;
+      }
+      QScrollBar::handle:vertical:hover
+      {
+        background:rgb(180, 180, 180);
+      }
+      QScrollBar:horizontal
+      {
+        height:6px;
+        background-color: rgb(200, 200, 200);
+      }
+      QScrollBar::handle:horizontal
+      {
+        background-color: rgb(200, 200, 200);
+        margin-left:0px;
+        margin-right:0px;
+      }
+      QScrollBar::handle:horizontal:hover
+      {
+        background:rgb(180, 180, 180);
+      }
+      """
+    )
     scroll_widget.setStyleSheet(
       """
       QFrame {
@@ -482,7 +749,6 @@ class Download(QFrame):
         background-color: rgb(238, 238, 238);
         background-color: white;
         background-color: transparent;
-
       }
       .QFrame:hover {
         background-color: rgb(240, 240, 240);
@@ -732,18 +998,198 @@ class Download(QFrame):
       logger.info("下载配置保存成功")
       return True
 
+
   def stateChange(self):
     for item in self.downloadCards:
       if item["select"]:
-        self.deleteButton.setDisabled(False)
+        self.state = self.State.SELECTED
         break
     else:
-      self.deleteButton.setDisabled(True)
+      self.state = self.State.NOT_SELECT
+
+
+  def startAllDownload(self):
+    # 重置日志记录编号
+    self.count = 1
+    # 重置下载记录（之前的记录不再记录）
+    self.downloadItemList = []
+    downloadList = []
+    for item in self.downloadCards:
+      if item["select"]:
+        downloadList.append({
+          "uid": item["uid"].text(),
+          "type": item["type"].text(),
+          "name": item["name"].text()
+        })
+    self.download = SpiderDownload(self, downloadList)
+    # 当程序退出时线程终止
+    self.download.setDaemon(True)
+    self.download.start()
+
+
+  def stopDownload(self):
+    """
+    终止正在进行的测试线程
+    """
+    if self.download != None:
+      self.state = self.State.STOPPING
+      self.download.raise_exception()
+
+  
+  def clearDownload(self):
+    """
+    删除所有下载记录
+    """
+    # 如果当前没有记录，那么直接返回
+    if self.scroll_info_layout.count() == 0:
+      return
+    # 如果有记录，询问一下是否确认
+    execute = False
+    box = QMessageBox(self)
+    box.setText("是否删除当前下载记录（不会删除实际下载文件）？")
+    box.setWindowTitle(" Pixiv下载工具")
+    box.setFont(Font.LEVEL3)
+    yesButton = box.addButton("是(Y)", QMessageBox.ButtonRole.AcceptRole)
+    noButton = box.addButton("否(N)", QMessageBox.ButtonRole.RejectRole)
+    yesButton.setFont(Font.LEVEL4)
+    noButton.setFont(Font.LEVEL4)
+    box.setDefaultButton(yesButton)
+    yesButton.setShortcut("Y")
+    noButton.setShortcut("N")
+    box.setStyleSheet(
+      """
+      QLabel {
+        color: rgb(0, 51, 153);
+      }
+      """
+    )
+    box.exec()
+    if box.clickedButton() == yesButton:
+      execute = True
+    # 不执行
+    if not execute:
+      return
+    for i in range(self.scroll_info_layout.count()):
+      self.scroll_info_layout.itemAt(i).widget().deleteLater()
+    # 记录信息从头开始
+    self.count = 1
+    self.downloadItemList = []
+        
 
   # 获取组件当前是否可以切走
   def canSwitchOut(self):
     return True
     
+
   # 尝试切走，成功返回True，失败返回False
   def switchOut(self):
     return self.canSwitchOut()
+
+
+class StateChangeEvent(QEvent):
+  """
+  下载状态变化，通知主线程进行操作
+  """
+  idType = QEvent.registerEventType()
+  def __init__(self, state):
+    super(StateChangeEvent, self).__init__(StateChangeEvent.idType)
+    self.state = state
+
+
+class AddContentEvent(QEvent):
+  """
+  新增下载内容显示，通知主线程进行操作
+  """
+  idType = QEvent.registerEventType()
+  def __init__(self, content):
+    super(AddContentEvent, self).__init__(AddContentEvent.idType)
+    self.content = content
+
+
+class SpiderDownload(threading.Thread):
+  def __init__(self, target, downloadList):
+    threading.Thread.__init__(self)
+    self.target = target
+    self.downloadList = downloadList
+  
+
+  def run(self):
+    QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(self.target.State.DOWNLOADING))
+    try:
+      spider = Spider(self.addContent)
+      for item in self.downloadList:
+        name = item["name"]
+        uid = item["uid"]
+        type = item["type"]
+        try:
+          QtCore.QCoreApplication.postEvent(self.target, AddContentEvent({
+            "type": "start",
+            "name": name,
+            "uid": uid,
+            "route": type
+          }))
+          spider.download_by_info(uid, type)
+        finally:
+          QtCore.QCoreApplication.postEvent(self.target, AddContentEvent({
+            "type": "end",
+            "name": name,
+            "uid": uid,
+            "route": type
+          }))
+    except Exception as e:
+      logger.error(e)
+    finally:
+      QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(None))
+    
+
+  def addContent(self, content):
+    """
+    # 图片页面
+    {
+      "type": "gallery",
+      "url": "abc",
+      "title": "abc",
+      "update": False
+    }
+    # 图片
+    {
+      "type": "image",
+      "url": "abc",
+      # 可以没有path，表示尚未下载完成
+      "path": "abc",
+      "method": "abc"
+      "update": False
+    }
+    # 系列小说
+    {
+      "type": "series",
+      "url": "abc",
+      "title": "abc",
+      "update": False
+    }
+    # 小说
+    {
+      "type": "novel",
+      "url": "abc",
+      # 可以没有path，表示尚未下载完成
+      "path": "abc",
+      "method": "abc",
+      "update": False
+    }
+    """
+    QtCore.QCoreApplication.postEvent(self.target, AddContentEvent(content))
+
+
+  def get_id(self):
+    if hasattr(self, '_thread_id'):
+      return self._thread_id
+    for id, thread in threading._active.items():
+      if thread is self:
+        return id
+
+  def raise_exception(self):
+    thread_id = self.get_id() 
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit)) 
+    if res > 1: 
+      ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0) 
+      logger.error("SpiderDownload终止失败")

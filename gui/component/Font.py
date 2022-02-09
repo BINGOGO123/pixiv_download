@@ -7,3 +7,4 @@ class Font(object):
   LEVEL3 = QFont("宋体", 12, QFont.Weight.Bold)
   LEVEL4 = QFont("宋体", 12)
   ENGLISH_LEVEL4 = QFont("Georgia", 12)
+  ENGLISH_LEVEL5 = QFont("Georgia", 10)
