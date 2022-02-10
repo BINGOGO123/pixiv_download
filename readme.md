@@ -64,6 +64,8 @@ pixiv_download
    > python gui.py
    > ```
 
+   ![pixiv_download/1.png at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/1.png)
+
 2. 注册[pixiv](https://www.pixiv.net/)账号并登录
 
 3. 按`f12`打开开发者模式，点击网络（Network），找到`https://www.pixiv.net/`这个Get请求并点击，点右侧的标头（Headers），复制下面请求头（Request Headers）栏中的Cookie项
@@ -72,11 +74,23 @@ pixiv_download
 
 4. 将复制到的Cookie信息输入到客户端账户的Cookie位置并保存，等待查询结果为账户可用，若查询结果为账户不可用说明Cookie信息错误
 
+   ![pixiv_download/2.png at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/2.png)
+
+   ![pixiv_download/3.png at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/3.png)
+
 5. 点击设置可以修改**文件存放位置**、**请求等待时间**、**数据库等配置**信息
+
+   ![pixiv_download/4.png at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/4.png)
 
 6. 点击下载后创建若干下载项，可自定义下载项名称、用户UID和类型，用户UID为用户主页网址中的数字部分，类型可选`bookmarks/artworks`、`bookmarks/novels`、`illustrations`和`novels`，分别对应用户收藏的插画、用户收藏的小说、用户创作的插画和用户创作的小说
 
+   ![pixiv_download/5.jpg at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/5.jpg)
+
 7. 选中若干个下载项后点击开始按钮，右边可以查看下载日志，点击可查看图片、小说、网址或打开文件所在位置，文件目标存储位置可见设置中的**文件存放位置**选项
+
+   ![pixiv_download/6.jpg at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/6.jpg)
+
+   ![pixiv_download/7.jpg at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/7.jpg)
 
 ## 命令行运行
 
@@ -140,7 +154,9 @@ pixiv_download
 
 1. 确保本地MySQL服务运行中
 
-1. 在设置中将数据库选择切换为mysql并配置user(用户名)、password(密码)、db(数据库名)三项
+2. 在设置中将数据库选择切换为mysql并配置user(用户名)、password(密码)、db(数据库名)三项
+
+   ![pixiv_download/8.png at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/8.png)
 
 2. 也可直接在`config.json`的`spider`项中配置MySQL并将`type`改为`mysql`
 
@@ -167,6 +183,8 @@ pixiv_download
 
 1. 在设置中配置源数据库和目标数据库
 
+   ![pixiv_download/9.png at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/9.png)
+   
 2. 也可在`config.json`的`__main__`项中加入如下项：
 
    ```json
