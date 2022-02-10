@@ -1,14 +1,11 @@
 # 下载管理界面
 from enum import Enum
 import os
-import sys
 import threading
-import time
-import PyQt6
 from PyQt6 import QtCore
-from PyQt6.QtCore import QFileSelector, QRegularExpression, QEvent
-from PyQt6.QtGui import QColor, QCursor, QFont, QIcon, QImage, QIntValidator, QPixmap, QRegularExpressionValidator, QTextCursor, QTextLine, QValidator
-from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListView, QListWidget, QMessageBox, QPushButton, QScrollArea, QScrollBar, QScroller, QVBoxLayout, QWidget, QPlainTextEdit
+from PyQt6.QtCore import QEvent
+from PyQt6.QtGui import QColor, QIcon
+from PyQt6.QtWidgets import QApplication, QFrame, QGraphicsDropShadowEffect, QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
 import ctypes
 
 from spider.Spider import Spider
@@ -16,6 +13,7 @@ from .component.Font import Font
 from .component.LineEdit import LineEdit
 from .component.ComboBox import ComboBox
 from .component.DownloadItem import DownloadItem
+from .component.DownloadNovel import DownloadNovel
 from .component.StartDownload import StartDownload
 from .component.EndDownload import EndDownload
 from config import base_config
@@ -137,9 +135,9 @@ class Download(QFrame):
     elif e.type() == AddContentEvent.idType:
       content = e.content
       update = content.get("update")
-      type = content.get("type")
+      itemType = content.get("type")
       if update == True:
-        if type == "image":
+        if itemType == "image":
           if len(self.downloadItemList) == 0:
             logger.error("Download 更新image时gallery数量为0")
             return
@@ -147,19 +145,42 @@ class Download(QFrame):
             url = str(content.get("url"))
             path = None if content.get("path") == None else str(content.get("path"))
             method = str(content.get("method"))
+            color = None if content.get("color") == None else str(content.get("color"))
           except Exception as e:
             logger.error("Download 更新image时content格式错误，content={}".format(content))
+            return
+          if type(self.downloadItemList[-1]) != DownloadItem:
+            logger.error("Download 更新image时上一个对象不是DownloadItem，content={}".format(content))
             return
           imageCount = self.downloadItemList[-1].imageCount()
           if imageCount == 0:
             logger.error("Download 更新image时gallery中的image数量为0，content={}".format(content))
             return
-          self.downloadItemList[-1].changeImage(imageCount - 1, url, path, method)
+          self.downloadItemList[-1].changeImage(imageCount - 1, url, path, method, color)
           # 刷新页面并滑到底部
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
           self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
-        elif type == "novel":
+        elif itemType == "novel":
+          if len(self.downloadItemList) == 0:
+            logger.error("Download 更新novel时series数量为0")
+            return
+          try:
+            url = str(content.get("url"))
+            path = None if content.get("path") == None else str(content.get("path"))
+            method = str(content.get("method"))
+            color = None if content.get("color") == None else str(content.get("color"))
+          except Exception as e:
+            logger.error("Download 更新novel时content格式错误，content={}".format(content))
+            return
+          if type(self.downloadItemList[-1]) != DownloadNovel:
+            logger.error("Download 更新novel时上一个对象不是DownloadNovel，content={}".format(content))
+            return
+          novelCount = self.downloadItemList[-1].novelCount()
+          if novelCount == 0:
+            logger.error("Download 更新novel时gallery中的novel数量为0，content={}".format(content))
+            return
+          self.downloadItemList[-1].changeNovel(novelCount - 1, url, path, method, color)
           # 刷新页面并滑到底部
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
@@ -167,7 +188,7 @@ class Download(QFrame):
         else:
           logger.error("Download 无法执行AddContentEvent操作，content={}".format(content))
       else:
-        if type == "gallery":
+        if itemType == "gallery":
           try:
             title = str(content.get("title"))
             url = str(content.get("url"))
@@ -183,7 +204,7 @@ class Download(QFrame):
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
           self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
-        elif type == "image":
+        elif itemType == "image":
           if len(self.downloadItemList) == 0:
             logger.error("Download 新增image时gallery数量为0")
             return
@@ -191,25 +212,53 @@ class Download(QFrame):
             url = str(content.get("url"))
             path = None if content.get("path") == None else str(content.get("path"))
             method = str(content.get("method"))
+            color = None if content.get("color") == None else str(content.get("color"))
           except Exception as e:
             logger.error("Download 新增image时content格式错误，content={}".format(content))
             return
-          self.downloadItemList[-1].addImage(url, path, method)
+          self.downloadItemList[-1].addImage(url, path, method, color)
           # 刷新页面并滑到底部
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
           self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
-        elif type == "series":
+        elif itemType == "series":
+          try:
+            title = str(content.get("title"))
+            url = str(content.get("url"))
+          except Exception as e:
+            logger.error("Download 新增series时content格式错误，content={}".format(content))
+            return
+          novelList = []
+          downloadNovel = DownloadNovel(self.count, title, url, novelList)
+          self.scroll_info_layout.addWidget(downloadNovel)
+          self.count += 1
+          self.downloadItemList.append(downloadNovel)
           # 刷新页面并滑到底部
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
           self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
-        elif type == "novel":
+        elif itemType == "novel":
+          if len(self.downloadItemList) == 0:
+            logger.error("Download 新增novel时series数量为0")
+            return
+          try:
+            url = str(content.get("url"))
+            path = None if content.get("path") == None else str(content.get("path"))
+            method = str(content.get("method"))
+            color = None if content.get("color") == None else str(content.get("color"))
+          except Exception as e:
+            logger.error("Download 新增novel时content格式错误，content={}".format(content))
+            return
+          self.downloadItemList[-1].addNovel(url, path, method, color)
           # 刷新页面并滑到底部
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
           self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
-        elif type == "start":
+        elif itemType == "start":
+          # 重置日志记录编号
+          self.count = 1
+          # 重置下载记录（之前的记录不再记录）
+          self.downloadItemList = []
           name = str(content.get("name"))
           uid = str(content.get("uid"))
           route = str(content.get("route"))
@@ -218,7 +267,7 @@ class Download(QFrame):
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
           self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
-        elif type == "end":
+        elif itemType == "end":
           name = str(content.get("name"))
           uid = str(content.get("uid"))
           route = str(content.get("route"))
@@ -465,9 +514,11 @@ class Download(QFrame):
     #     }
     #   ]
     # ))
-    # scroll_info_layout.setContentsMargins(0, 0, 0, 0)
+    scroll_info_layout_outline = QVBoxLayout()
+    scroll_info_layout_outline.addLayout(scroll_info_layout)
+    scroll_info_layout_outline.addStretch(1)
     scroll_info_layout.setSpacing(10)
-    scroll_info_frame.setLayout(scroll_info_layout)
+    scroll_info_frame.setLayout(scroll_info_layout_outline)
     scroll_info_frame.setContentsMargins(0, 0, 0, 0)
     # scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
     scroll_info.setWidget(scroll_info_frame)
@@ -487,7 +538,7 @@ class Download(QFrame):
     scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
     scroll_widget.setLayout(layout)
     scroll_widget.setContentsMargins(0, 0, 0, 0)
-    scroll.setFixedWidth(260)
+    scroll.setFixedWidth(266)
     # 设置滚动区域的最小尺寸，因为在父亲上面设置了最小尺寸，所以这里就不用设置了
     # scroll.setMinimumSize(300, 400)
     # scrollarea 作为一个组件，可以设置窗口
@@ -518,7 +569,7 @@ class Download(QFrame):
       }
       QScrollBar:vertical
       {
-        width:6px;
+        width: 12px;
         background-color: rgb(200, 200, 200);
       }
       QScrollBar::handle:vertical
@@ -533,7 +584,7 @@ class Download(QFrame):
       }
       QScrollBar:horizontal
       {
-        height:6px;
+        height: 12px;
         background-color: rgb(200, 200, 200);
       }
       QScrollBar::handle:horizontal
@@ -562,7 +613,7 @@ class Download(QFrame):
       }
       QScrollBar:vertical
       {
-        width:6px;
+        width: 12px;
         background-color: rgb(200, 200, 200);
       }
       QScrollBar::handle:vertical
@@ -577,7 +628,7 @@ class Download(QFrame):
       }
       QScrollBar:horizontal
       {
-        height:6px;
+        height: 12px;
         background-color: rgb(200, 200, 200);
       }
       QScrollBar::handle:horizontal
@@ -1009,10 +1060,6 @@ class Download(QFrame):
 
 
   def startAllDownload(self):
-    # 重置日志记录编号
-    self.count = 1
-    # 重置下载记录（之前的记录不再记录）
-    self.downloadItemList = []
     downloadList = []
     for item in self.downloadCards:
       if item["select"]:
@@ -1034,6 +1081,7 @@ class Download(QFrame):
     if self.download != None:
       self.state = self.State.STOPPING
       self.download.raise_exception()
+      self.download = None
 
   
   def clearDownload(self):
@@ -1079,7 +1127,7 @@ class Download(QFrame):
   # 获取组件当前是否可以切走
   def canSwitchOut(self):
     return True
-    
+
 
   # 尝试切走，成功返回True，失败返回False
   def switchOut(self):
@@ -1144,37 +1192,41 @@ class SpiderDownload(threading.Thread):
 
   def addContent(self, content):
     """
-    # 图片页面
+    ## 图片页面
     {
       "type": "gallery",
       "url": "abc",
       "title": "abc",
       "update": False
     }
-    # 图片
+    ## 图片
     {
       "type": "image",
       "url": "abc",
       # 可以没有path，表示尚未下载完成
       "path": "abc",
       "method": "abc"
-      "update": False
+      "update": False,
+      # 可以没有，表示不特殊设置
+      "color": "red"
     }
-    # 系列小说
+    ## 系列小说
     {
       "type": "series",
       "url": "abc",
       "title": "abc",
       "update": False
     }
-    # 小说
+    ## 小说
     {
       "type": "novel",
       "url": "abc",
       # 可以没有path，表示尚未下载完成
       "path": "abc",
       "method": "abc",
-      "update": False
+      "update": False,
+      # 可以没有，表示不特殊设置
+      "color": "red"
     }
     """
     QtCore.QCoreApplication.postEvent(self.target, AddContentEvent(content))

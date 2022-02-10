@@ -179,7 +179,7 @@ pixiv_download
 - [x] 补充可视化客户端的日志模块
 - [x] 将所有可配置项加入设置功能中
 - [x] 在可视化客户端账户功能
-- [ ] 在可视化客户端增加下载管理功能：启动下载尚未完成
+- [x] 在可视化客户端增加下载管理功能
 - [ ] 在可视化客户端增加阅览功能
 - [ ] Linux与Mac平台的适配性
 
@@ -213,10 +213,21 @@ pixiv_download
 - [x] 序号编号方式更改
 - [x] 新增记录后自动滑到底部
 - [x] 新增删除记录按钮
-- [ ] 增加小说显示
+- [x] 测试写入失败的情况测试
+- [x] 右边显示数量少时高度问题
+- [x] DownloadItem宽度以父亲宽度优先
+- [x] 增加小说显示
+- [x] 下载方式位置调整
+- [x] 滚动条变宽
+- [x] 下载方式增加多种颜色
+- [x] mousePressEvent = None是否正确的问题
+- [x] 尚未下载完成更改
+- [x] 小说和图片下载记录背景颜色更改
+- [x] 单次下载多个项目时每个项目的序号需要重置
+- [x] 路径计算改为库方法
 - [ ] 图片不显示：qt.gui.imageio: QImageIOHandler: Rejecting image as it exceeds the current allocation limit of 128 megabytes
-- [ ] 右边显示数量少时高度问题
-- [ ] DownloadItem宽度以父亲宽度优先
+
+
 ## 经验总结
 
 ### 使`QScrollArea`中的`QWidget`与父亲等宽或等高（即与普通组件一样自适应父亲的高度和宽度）

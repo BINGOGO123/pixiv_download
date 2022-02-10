@@ -299,7 +299,8 @@ class Spider:
           "type": "image",
           "update": False,
           "url": image_url,
-          "method": "下载中"
+          "method": "下载中",
+          "color": "blue"
         })
 
       # 查询该路径是否下载了该image_url图片
@@ -359,7 +360,8 @@ class Spider:
                 "type": "image",
                 "update": True,
                 "url": image_url,
-                "method": "下载失败"
+                "method": "下载失败",
+                "color": "red"
               })
             continue
           content = res.content
@@ -372,7 +374,8 @@ class Spider:
               "type": "image",
               "update": True,
               "url": image_url,
-              "method": "下载失败"
+              "method": "下载失败",
+              "color": "red"
             })
           continue
         content = res.content
@@ -389,7 +392,8 @@ class Spider:
             "type": "image",
             "update": True,
             "url": image_url,
-            "method": "写入失败"
+            "method": "写入失败",
+            "color": "red"
           })
         continue
       # 通知父亲更新刚才添加的图片
@@ -461,6 +465,14 @@ class Spider:
           if seriesId in downloaded_series:
             logger.info("该系列在本轮已经下载过，跳过")
             continue
+          # 通知父亲新增系列
+          if self.inform != None:
+            self.inform({
+              "type": "series",
+              "update": False,
+              "title": seriesTitle,
+              "url": "https://www.pixiv.net/novel/series/{}".format(seriesId)
+            })
           series_data = self.get_series(seriesId)
           series_path = os.path.join(filepath, self.__regular.sub("#", seriesTitle) + "_" + str(seriesId))
           if not os.path.exists(series_path):
@@ -471,6 +483,14 @@ class Spider:
         except KeyError:
           pid = poster["id"]
           title = poster["title"]
+          # 通知父亲新增系列（相当于该系列只有一篇小说）
+          if self.inform != None:
+            self.inform({
+              "type": "series",
+              "update": False,
+              "title": title,
+              "url": "https://www.pixiv.net/novel/show.php?id={}".format(pid)
+            })
           if self.download_novel(pid, title, filepath) != False:
             successful += 1
       offset += len(data)
@@ -524,6 +544,14 @@ class Spider:
           if seriesId in downloaded_series:
             logger.info("该系列在本轮已经下载过，跳过")
             continue
+          # 通知父亲新增系列
+          if self.inform != None:
+            self.inform({
+              "type": "series",
+              "update": False,
+              "title": seriesTitle,
+              "url": "https://www.pixiv.net/novel/series/{}".format(seriesId)
+            })
           series_data = self.get_series(seriesId)
           series_path = os.path.join(filepath, self.__regular.sub("#", seriesTitle) + "_" + str(seriesId))
           if not os.path.exists(series_path):
@@ -534,6 +562,14 @@ class Spider:
         except KeyError:
           pid = data[key]["id"]
           title = data[key]["title"]
+          # 通知父亲新增系列（相当于该系列只有一篇小说）
+          if self.inform != None:
+            self.inform({
+              "type": "series",
+              "update": False,
+              "title": title,
+              "url": "https://www.pixiv.net/novel/show.php?id={}".format(pid)
+            })
           if self.download_novel(pid, title, filepath) != False:
             successful += 1
     logger.info("poster总数={} 下载成功={} 下载失败={}".format(total, successful, total - successful))
@@ -571,6 +607,15 @@ class Spider:
     """
     logger.info("download_novel(pid={}, title={}, filepath={})".format(pid, title, filepath))
     url = "https://www.pixiv.net/novel/show.php?id={}".format(pid)
+    # 通知父亲新增小说
+    if self.inform != None:
+      self.inform({
+        "type": "novel",
+        "update": False,
+        "url": url,
+        "method": "正在下载",
+        "color": "blue"
+      })
 
     # 生成文件存储路径
     name = title + "_" + pid
@@ -584,10 +629,30 @@ class Spider:
       if self.config.get("md5_match") == True:
         if self.compare_md5(storage_path, ret[0][0]) != False:
           logger.info("已存在且md5匹配，跳过")
+          # 通知父亲更新小说
+          if self.inform != None:
+            self.inform({
+              "type": "novel",
+              "update": True,
+              "url": url,
+              "path": storage_path,
+              "method": "已存在"
+            })
           return True
       else:
         logger.info("已存在，跳过")
+        # 通知父亲更新小说
+        if self.inform != None:
+          self.inform({
+            "type": "novel",
+            "update": True,
+            "url": url,
+            "path": storage_path,
+            "method": "已存在"
+          })
         return True
+    # 查询是否可从其他位置搬运，carry=True表示可以
+    carry = False
     self.database.escape_execute("delete from file where storage_path = {}", storage_path)
     ret = self.database.escape_execute("select storage_path,md5 from file where url = {} and storage_path != {}", url, storage_path)
     if ret != False:
@@ -598,6 +663,7 @@ class Spider:
           content = self.compare_md5(one[0], "")
         if content != False:
           logger.info("搬运，文件存于{}".format(one[0]))
+          carry = True
           break
         else:
           # 此时说明文件不存在或者文件的md5与数据库的md5不吻合
@@ -605,17 +671,31 @@ class Spider:
             self.database.escape_execute("delete from file where storage_path = {}", one[0])
       else:
         res = self.get_response(url)
-        if res == False:
-          return False
-        content = self.novel_parse(res.text, pid)
+        content = self.novel_parse(res.text, pid) if res != False else False
         if content == False:
+          # 通知父亲更新小说
+          if self.inform != None:
+            self.inform({
+              "type": "novel",
+              "update": True,
+              "url": url,
+              "method": "下载失败",
+              "color": "red"
+            })
           return False
     else:
       res = self.get_response(url)
-      if res == False:
-        return False
-      content = self.novel_parse(res.text, pid)
+      content = self.novel_parse(res.text, pid) if res != False else False
       if content == False:
+        # 通知父亲更新小说
+        if self.inform != None:
+          self.inform({
+            "type": "novel",
+            "update": True,
+            "url": url,
+            "method": "下载失败",
+            "color": "red"
+          })
         return False
     # 写文件存库
     try:
@@ -624,7 +704,25 @@ class Spider:
       f.close()
     except PermissionError:
       logger.exception("文件写入失败")
+      # 通知父亲更新小说
+      if self.inform != None:
+        self.inform({
+          "type": "novel",
+          "update": True,
+          "url": url,
+          "method": "写入失败",
+          "color": "red"
+        })
       return False
+    # 通知父亲更新小说
+    if self.inform != None:
+      self.inform({
+        "type": "novel",
+        "update": True,
+        "url": url,
+        "path": storage_path,
+        "method": "搬运完成" if carry else "下载完成" 
+      })
     # 由于sqlite3的时区使用的不是本地时区，而mysql和python获取的时间均为本地时区，所以如果使用默认的download_time,会导致时间不一致，这里统一按照python代码获取的时间来存储和查询
     if self.database.escape_execute("insert into file (url, storage_path, md5, download_time) values ({}, {}, {}, {})", url, storage_path, get_md5(content), datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M:%S")) == False:
       return False

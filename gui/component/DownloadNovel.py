@@ -1,4 +1,4 @@
-# 下载项
+# 下载小说
 
 import os
 import webbrowser
@@ -9,14 +9,15 @@ from .Font import Font
 from . import logger
 
 
-class DownloadItem(QFrame):
 
-  def __init__(self, order, title, url, imageList, *args):
+class DownloadNovel(QFrame):
+
+  def __init__(self, order, title, url, novelList, *args):
     super().__init__(*args)
     self.order = str(order)
     self.title = str(title)
     self.url = str(url)
-    self.imageList = imageList
+    self.novelList = novelList
     self.initUI()
 
   def initUI(self):
@@ -54,16 +55,16 @@ class DownloadItem(QFrame):
     self.infoRegion = QVBoxLayout()
     self.infoRegion.setSpacing(0)
     self.infoList = []
-    for image in self.imageList:
+    for novel in self.novelList:
       try:
-        imageUrl = str(image.get("url"))      
-        imagePath = None if image.get("path") == None else str(image.get("path"))
-        imageMethod = str(image.get("method"))
-        imageColor = None if image.get("color") == None else str(image.get("color"))
+        novelUrl = str(novel.get("url"))      
+        novelPath = None if novel.get("path") == None else str(novel.get("path"))
+        novelMethod = str(novel.get("method"))
+        novelColor = None if novel.get("color") == None else str(novel.get("color"))
       except Exception as e:
-        logger.error("DownloadItem image参数错误，image={}".format(image))
+        logger.error("DownloadNovel novel参数错误，novel={}".format(novel))
         continue
-      self.addImage(imageUrl, imagePath, imageMethod, imageColor)
+      self.addNovel(novelUrl, novelPath, novelMethod, novelColor)
 
     finalLayout = QVBoxLayout()
     finalLayout.addLayout(titleLine)
@@ -78,15 +79,15 @@ class DownloadItem(QFrame):
       """
     )
 
-  def addImage(self, imageUrl, imagePath, imageMethod, imageColor = None):
-    imageButton = QPushButton()
-    if imagePath != None:
-      imageButton.setIcon(QIcon(imagePath))
+  def addNovel(self, novelUrl, novelPath, novelMethod, novelColor = None):
+    novelButton = QPushButton()
+    if novelPath != None:
+      novelButton.setIcon(QIcon("icons/novel.jpg"))
     else:
-      imageButton.setIcon(QIcon("icons/image.svg"))
-    imageButton.setIconSize(QtCore.QSize(50, 50))
-    imageButton.setFixedWidth(50)
-    imageButton.setStyleSheet(
+      novelButton.setIcon(QIcon("icons/novel_downloading.svg"))
+    novelButton.setIconSize(QtCore.QSize(50, 50))
+    novelButton.setFixedWidth(50)
+    novelButton.setStyleSheet(
       """
       QPushButton {
         border: none;
@@ -94,7 +95,7 @@ class DownloadItem(QFrame):
       }
       """
     )
-    urlLabel = QPushButton(imageUrl)
+    urlLabel = QPushButton(novelUrl)
     urlLabel.setFont(Font.ENGLISH_LEVEL5)
     urlLabel.setStyleSheet(
       """
@@ -108,11 +109,11 @@ class DownloadItem(QFrame):
     )
     urlLabel.setToolTip("打开网址")
     urlLabel.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
-    urlLabel.clicked.connect(lambda : webbrowser.open_new(imageUrl))
-    if imagePath == None:
+    urlLabel.clicked.connect(lambda : webbrowser.open_new(novelUrl))
+    if novelPath == None:
       pathLabel = QPushButton("下载未完成")
     else:
-      pathLabel = QPushButton(imagePath)
+      pathLabel = QPushButton(novelPath)
     pathLabel.setFont(Font.ENGLISH_LEVEL5)
     pathLabel.setStyleSheet(
       """
@@ -125,20 +126,20 @@ class DownloadItem(QFrame):
     )
     pathLabel.setToolTip("打开文件所在位置")
     pathLabel.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
-    if imagePath != None:
-      pathLabel.clicked.connect(lambda : os.system(r'start "" "{}"'.format(os.path.dirname(imagePath))))
-    methodLabel = QLabel(imageMethod)
+    if novelPath != None:
+      pathLabel.clicked.connect(lambda : os.system(r'start "" "{}"'.format(os.path.dirname(novelPath))))
+    methodLabel = QLabel(novelMethod)
     methodLabel.setFont(Font.LEVEL4)
     methodLabel.setFixedWidth(85)
     methodLabel.setFixedHeight(40)
     methodLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-    if imageColor == "red":
+    if novelColor == "red":
       methodStyle = """
       background-color: #d81e06;
       color: white;
       border-radius: 2px;
       """
-    elif imageColor == "blue":
+    elif novelColor == "blue":
       methodStyle = """
       background-color: #1296db;
       color: white;
@@ -152,7 +153,7 @@ class DownloadItem(QFrame):
     methodLabel.setStyleSheet(methodStyle)
     infoWidget = QFrame()
     infoLine = QHBoxLayout()
-    infoLine.addWidget(imageButton)
+    infoLine.addWidget(novelButton)
     infoLine.addWidget(methodLabel)
     infoRow1 = QHBoxLayout()
     infoRow1.addWidget(pathLabel)
@@ -184,38 +185,39 @@ class DownloadItem(QFrame):
       }
       """
     )
-    if imagePath != None:
-      infoWidget.mousePressEvent = lambda x : None if os.system(r'start "" "{}"'.format(imagePath)) != None else None
-      imageButton.clicked.connect(lambda x : os.system(r'start "" "{}"'.format(imagePath)))
-    infoWidget.setToolTip("单击打开图片")
+    if novelPath != None:
+      infoWidget.mousePressEvent = lambda x : None if os.system(r'start "" "{}"'.format(novelPath)) != None else None
+      novelButton.clicked.connect(lambda x : os.system(r'start "" "{}"'.format(novelPath)))
+    infoWidget.setToolTip("单击打开小说")
     self.infoRegion.addWidget(infoWidget)
     self.infoList.append({
-      "imageButton": imageButton,
+      "novelButton": novelButton,
       "infoWidget": infoWidget,
       "url": urlLabel,
       "path": pathLabel,
       "method": methodLabel
     })
 
-  def imageCount(self):
+  def novelCount(self):
     """
-    返回当前图片数量
+    返回当前小说数量
     """
     return len(self.infoList)
 
-  def changeImage(self, pos, imageUrl, imagePath, imageMethod, imageColor = None):
+  def changeNovel(self, pos, novelUrl, novelPath, novelMethod, novelColor = None):
     if(pos < 0 or pos >= len(self.infoList)):
-      logger.error("DownloadItem.changeImage pos={}，超出范围[0, {}]".format(pos, len(self.infoList)))
+      logger.error("DownalodNovel.changeNovel pos={}，超出范围[0, {}]".format(pos, len(self.infoList)))
       return
+      
     info = self.infoList[pos]
-    info["method"].setText(imageMethod)
-    if imageColor == "red":
+    info["method"].setText(novelMethod)
+    if novelColor == "red":
       methodStyle = """
       background-color: #d81e06;
       color: white;
       border-radius: 2px;
       """
-    elif imageColor == "blue":
+    elif novelColor == "blue":
       methodStyle = """
       background-color: #1296db;
       color: white;
@@ -227,18 +229,18 @@ class DownloadItem(QFrame):
       border-radius: 2px;
       """
     info["method"].setStyleSheet(methodStyle)
-    info["url"].setText(imageUrl)
+    info["url"].setText(novelUrl)
     info["url"].disconnect()
-    info["url"].clicked.connect(lambda : webbrowser.open_new(imageUrl))
+    info["url"].clicked.connect(lambda : webbrowser.open_new(novelUrl))
     info["path"].disconnect()
-    info["imageButton"].disconnect()
+    info["novelButton"].disconnect()
     info["infoWidget"].mousePressEvent = None
-    if imagePath != None:
-      info["imageButton"].setIcon(QIcon(imagePath))
-      info["path"].setText(imagePath)
-      info["infoWidget"].mousePressEvent = lambda x : None if os.system(r'start "" "{}"'.format(imagePath)) != None else None
-      info["imageButton"].clicked.connect(lambda x : os.system(r'start "" "{}"'.format(imagePath)))
-      info["path"].clicked.connect(lambda : os.system(r'start "" "{}"'.format(os.path.dirname(imagePath))))
+    if novelPath != None:
+      info["novelButton"].setIcon(QIcon("icons/novel.jpg"))
+      info["path"].setText(novelPath)
+      info["infoWidget"].mousePressEvent = lambda x : None if os.system(r'start "" "{}"'.format(novelPath)) != None else None
+      info["novelButton"].clicked.connect(lambda x : os.system(r'start "" "{}"'.format(novelPath)))
+      info["path"].clicked.connect(lambda : os.system(r'start "" "{}"'.format(os.path.dirname(novelPath))))
     else:
-      info["imageButton"].setIcon(QIcon("icons/image.svg"))
+      info["novelButton"].setIcon(QIcon("icons/novel_downloading.svg"))
       info["path"].setText("下载未完成")
