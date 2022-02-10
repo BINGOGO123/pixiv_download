@@ -1185,7 +1185,7 @@ class SpiderDownload(threading.Thread):
             "route": type
           }))
     except Exception as e:
-      logger.error(e)
+      logger.exception(e)
     finally:
       QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(None))
     

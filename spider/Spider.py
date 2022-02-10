@@ -12,6 +12,8 @@ from . import logger
 from . import module_name
 from .err import InitException, NetworkException, AccountException
 import copy
+# 这个必须先引入，否则打包时无法通过importlib引入这两个包，目前尚不清楚原因，其他包都可以
+from database import mysql, sqlite
 
 # 用以爬虫的配置
 # config = base_config["spider"]

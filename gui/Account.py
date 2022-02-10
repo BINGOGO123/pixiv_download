@@ -434,6 +434,7 @@ class SpiderTest(threading.Thread):
       except NetworkException:
         QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent(self.target.State.NETWORK_ANOMALY))
       except Exception as e:
+        logger.exception(e)
         QtCore.QCoreApplication.postEvent(self.target, StateChangeEvent("系统异常：{}".format(str(e))))
 
   def get_id(self):

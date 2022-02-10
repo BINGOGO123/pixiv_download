@@ -12,7 +12,7 @@
 pixiv_download
 │
 │   main.py            -- 命令行运行
-|   gui.py             -- 可视化客户端运行
+|   client.py          -- 可视化客户端运行
 |   check.py           -- 核验数据库记录与文件系统是否匹配
 |   migrate.py         -- 用以不同数据库之间记录迁移
 |   config.json        -- 配置文件，会覆盖项目中默认的配置信息
@@ -61,7 +61,7 @@ pixiv_download
    > 或在建立的虚拟环境下执行
    >
    > ```shell
-   > python gui.py
+   > python client.py
    > ```
 
    ![pixiv_download/1.png at main · BINGOGO123/pixiv_download (github.com)](https://github.com/BINGOGO123/pixiv_download/blob/main/readme_file/1.png)
@@ -230,8 +230,23 @@ pixiv_download
 ## 其他配置修改
 
 * 方法一：在客户端设置中更改对应项
-  
 * 方法二：查看`config/config.py`，在`config.json`中更改会覆盖`config/config.py`中的默认项
+
+## 打包EXE文件
+
+* 多文件打包
+
+  ```shell
+  pyinstaller -D -w -i ./icons/pixiv.ico client.py -y
+  cp -Path ./icons -Destination ./dist/client/icons/ -Recurse
+  ```
+
+* 单文件打包
+
+  ```shell
+  pyinstaller -F -w -i icons/pixiv.ico client.py -y
+  cp -Path ./icons -Destination ./dist/icons/ -Recurse
+  ```
 
 
 ## 进度计划

@@ -8,3 +8,6 @@ downloaded_*
 *.json
 __pycache__
 virtual
+build
+dist
+*.spec
