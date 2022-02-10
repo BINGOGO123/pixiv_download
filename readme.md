@@ -1,24 +1,22 @@
 # pixiv图片小说批下载
 
-随手写的一个pixiv批下载工具，可批下载用户收藏或创作的图片、小说，通过数据库对下载内容进行匹配和记录（默认使用文件数据库SQLite），从而避免相同文件重复下载，主要用以对个人收藏进行管理
+一个pixiv批下载工具，可批下载用户收藏或创作的图片、小说，通过数据库对下载内容进行匹配和记录（默认使用文件数据库SQLite），从而避免相同文件重复下载，主要用以对个人收藏进行管理
 
-Python版本：3.7.9
+* **目前没有实现账号密码登录，需要通过cookie登录**
 
-**目前没有实现账号密码登录，需要通过cookie登录**
-
-**建议在虚拟环境下运行本项目**
+* **Python版本：3.7.9**
 
 ## 项目结构
 
 ```
 pixiv_download
 │
-│   main.py            -- 主函数
-|   gui.py             -- 可视化客户端程序
+│   main.py            -- 命令行运行
+|   gui.py             -- 可视化客户端运行
 |   check.py           -- 核验数据库记录与文件系统是否匹配
 |   migrate.py         -- 用以不同数据库之间记录迁移
 |   config.json        -- 配置文件，会覆盖项目中默认的配置信息
-|   create.sql         -- 数据库结构，仅供参考
+|   create.sql         -- 数据库结构，无需使用，供参考
 |   requirements.txt   -- python依赖包
 |
 └───config             -- 管理配置文件
@@ -30,7 +28,10 @@ pixiv_download
 └───spider             -- 爬虫
 │   │   ...
 |
-└───component          -- 可视化组件
+└───gui                -- 可视化组件
+│   │   ...
+|
+└───icons              -- 图标
 │   │   ...
 |
 └───tool               -- 工具
@@ -43,9 +44,46 @@ pixiv_download
     |   ...
 ```
 
-## 快速运行
+## 配置环境
+
+1. 创建虚拟环境并进入
+
+2. 安装依赖包
+
+   ```shell
+   pip install -r requirements.txt
+   ```
+
+## 客户端运行
+
+1. 打开客户端
+
+   > 或在建立的虚拟环境下执行
+   >
+   > ```shell
+   > python gui.py
+   > ```
+
+2. 注册[pixiv](https://www.pixiv.net/)账号并登录
+
+3. 按`f12`打开开发者模式，点击网络（Network），找到`https://www.pixiv.net/`这个Get请求并点击，点右侧的标头（Headers），复制下面请求头（Request Headers）栏中的Cookie项
+
+   ***注意：在Chrome和Edge中直接复制即可，在Firefox中需要先点击右上角的原始再复制才能复制到完整的cookie信息***
+
+4. 将复制到的Cookie信息输入到客户端账户的Cookie位置并保存，等待查询结果为账户可用，若查询结果为账户不可用说明Cookie信息错误
+
+5. 点击设置可以修改**文件存放位置**、**请求等待时间**、**数据库等配置**信息
+
+6. 点击下载后创建若干下载项，可自定义下载项名称、用户UID和类型，用户UID为用户主页网址中的数字部分，类型可选`bookmarks/artworks`、`bookmarks/novels`、`illustrations`和`novels`，分别对应用户收藏的插画、用户收藏的小说、用户创作的插画和用户创作的小说
+
+7. 选中若干个下载项后点击开始按钮，右边可以查看下载日志，点击可查看图片、小说、网址或打开文件所在位置，文件目标存储位置可见设置中的**文件存放位置**选项
+
+## 命令行运行
 
 1. 在项目根目录下新建`config.json`文件，复制如下内容到其中并保存
+   
+   > 若已运行过客户端，则会自动生成该文件，无需创建
+   
    ```json
    {
      "spider": {
@@ -56,14 +94,7 @@ pixiv_download
    
 2. 注册[pixiv](https://www.pixiv.net/)账号并登录
 
-3. 按`f12`打开开发者模式，点击网络（Network），找到`https://www.pixiv.net/`这个Get请求并点击，点右侧的标头（Headers），复制下面请求头（Request Headers）栏中的Cookie项到`config.json`中的`cookie`项中
-
-   ***注意：在Chrome和Edge中直接复制即可，在Firefox中需要先点击右上角的原始再复制才能复制到完整的cookie信息***
-
-4. 安装必须的依赖包
-   ```shell
-   pip install -r requirements.txt
-   ```
+3. 复制Cookie到到`config.json`中的`cookie`项中，方法同上
 
 5. 可下载的内容包括用户创作的插画、用户创作的小说、用户收藏的插画、用户收藏的小说四种，打开对应页面然后复制网址即可，四种类型网址分别形如：
 
@@ -109,46 +140,63 @@ pixiv_download
 
 1. 确保本地MySQL服务运行中
 
-2. 在`config.json`的`spider`项中加入如下项：
+1. 在设置中将数据库选择切换为mysql并配置user(用户名)、password(密码)、db(数据库名)三项
+
+2. 也可直接在`config.json`的`spider`项中配置MySQL并将`type`改为`mysql`
 
    ```json
    "database": {
-     "type": "mysql",
      "mysql": {
+       "db": "",
        "host": "localhost",
-       "port": 3306,
-       "user": "",
        "password": "",
-       "db": ""
-     }
+       "port": "3306",
+       "user": ""
+     },
+     "sqlite": {
+       "db": "pixiv_download"
+     },
+     "type": "sqlite"
    }
    ```
-
-   填充user(用户名)、password(密码)、db(数据库名)三项
+   
 
 ## 数据库记录迁移
 
 当切换数据库存储文件记录时，可以运行`migrate.py`进行迁移：
 
-1. 在`config.json`的`__main__`项中加入如下项：
+1. 在设置中配置源数据库和目标数据库
+
+2. 也可在`config.json`的`__main__`项中加入如下项：
 
    ```json
    "migrate": {
+     "output": "migrate.txt",
      "source": {
-       "type": "mysql",
        "mysql": {
+         "db": "",
          "host": "localhost",
-         "port": 3306,
-         "user": "",
          "password": "",
-         "db": ""
-       }
+         "port": "3306",
+         "user": ""
+       },
+       "sqlite": {
+         "db": "pixiv_download"
+       },
+       "type": "mysql"
      },
      "target": {
-       "type": "sqlite",
+       "mysql": {
+         "db": "",
+         "host": "localhost",
+         "password": "",
+         "port": "3306",
+         "user": ""
+       },
        "sqlite": {
-         "db": ""
-       }
+         "db": "pixiv_download"
+       },
+       "type": "sqlite"
      }
    }
    ```
@@ -163,15 +211,10 @@ pixiv_download
 
 ## 其他配置修改
 
-* 方法一：查看`config/config.py`，在`config.json`中更改会覆盖`config/config.py`中的默认项
+* 方法一：在客户端设置中更改对应项
   
-* 方法二：执行：
+* 方法二：查看`config/config.py`，在`config.json`中更改会覆盖`config/config.py`中的默认项
 
-   ```shell
-   python gui.py
-   ```
-
-   在设置选项中进行修改
 
 ## 进度计划
 
@@ -183,7 +226,7 @@ pixiv_download
 - [ ] 在可视化客户端增加阅览功能
 - [ ] Linux与Mac平台的适配性
 
-## 目前存在的问题
+## 问题修复
 
 - [x] 把头像改成button的icon，同步side的账户按钮和里面的图形一致
 - [x] 账户状态改变时通知父亲
@@ -228,7 +271,7 @@ pixiv_download
 - [ ] 图片不显示：qt.gui.imageio: QImageIOHandler: Rejecting image as it exceeds the current allocation limit of 128 megabytes
 
 
-## 经验总结
+## 小技巧记录
 
 ### 使`QScrollArea`中的`QWidget`与父亲等宽或等高（即与普通组件一样自适应父亲的高度和宽度）
 
