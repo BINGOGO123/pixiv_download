@@ -22,7 +22,7 @@ from tool.tool import saveJson
 
 
 class CreateDownload(QWidget):
-  def __init__(self, upper, name = "", uid = "", type = "bookmarks/artworks", pos = None, title = "新建下载对象", *args):
+  def __init__(self, upper, name = "", uid = "", type = None, pos = None, title = "新建下载对象", *args):
     super().__init__(*args)
     self.upper = upper
     self.initUI(name, uid, type, pos, title)
@@ -47,7 +47,10 @@ class CreateDownload(QWidget):
     vbox.addStretch(1)
     self.nameEdit = LineEdit("名   称", name, self.changeState, Font.LEVEL4)
     self.uidEdit = LineEdit("用户UID", uid, self.changeState, Font.LEVEL4, True)
-    self.typeEdit = ComboBox("类   型", type, Spider.getRoutes(), self.changeState, Font.LEVEL4)
+    routeList = Spider.getRoutes()
+    if type == None:
+      type = routeList[0]
+    self.typeEdit = ComboBox("类   型", type, routeList, self.changeState, Font.LEVEL4)
     vbox.addWidget(self.nameEdit)
     vbox.addWidget(self.uidEdit)
     vbox.addWidget(self.typeEdit)
@@ -104,9 +107,9 @@ class CreateDownload(QWidget):
     self.setLayout(hbox)
     self.quitButton.clicked.connect(self.close)
     if pos != None:
-      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.editItem(pos, *self.getInfo())))
+      self.saveButton.clicked.connect(lambda : self.close() if self.upper.editItem(pos, *self.getInfo()) == True else 0)
     else:
-      self.saveButton.clicked.connect(lambda : (self.close(), self.upper.addItem(*self.getInfo())))
+      self.saveButton.clicked.connect(lambda : self.close() if self.upper.addItem(*self.getInfo()) == True else 0)
   def getInfo(self):
     return [self.nameEdit.getValue(), self.uidEdit.getValue(), self.typeEdit.getValue()]
   def changeState(self):
@@ -276,8 +279,20 @@ class Download(QFrame):
           QApplication.processEvents()
           self.scroll_info_frame.adjustSize()
           self.scroll_info.verticalScrollBar().setValue(self.scroll_info.verticalScrollBar().maximum())
+        elif itemType == "makedir":
+          # 通知事件文件区已经发生修改
+          if self.eventList.get("setUpdate") != None:
+            for event in self.eventList.get("setUpdate"):
+              event()
         else:
           logger.error("Download 无法执行AddContentEvent操作，content={}".format(content))
+      # 如果有图片或者小说下载完成，则触发内容更新事件
+      if (itemType == "image" or itemType == "novel") and content.get("new") == True:
+        path = None if content.get("path") == None else str(content.get("path"))
+        if path != None:
+          if self.eventList.get("contentUpdate") != None:
+            for event in self.eventList.get("contentUpdate"):
+              event(path)
 
 
   @property
@@ -357,6 +372,8 @@ class Download(QFrame):
     self.count = 1
     # 日志对象记录
     self.downloadItemList = []
+    # 通知注册的事件设置已发生修改
+    self.eventList = {}
     self.initUI()
     # 根据按钮状态更新state
     self.stateChange()
@@ -679,7 +696,21 @@ class Download(QFrame):
       """
     )
     accountID = QLabel(name)
+    accountID.setToolTip(name)
     accountID.setFont(Font.LEVEL3)
+    # 根据小说还是图片更改颜色
+    if Spider.isNovel(route):
+      accountID.setStyleSheet(
+        """
+        color: #36ab60;
+        """
+      )
+    else:
+      accountID.setStyleSheet(
+        """
+        color: #1296db;
+        """
+      ) 
     upIcon = QIcon("icons/up.svg")
     upButton = QPushButton()
     upButton.setToolTip("上移")
@@ -838,6 +869,23 @@ class Download(QFrame):
     self.scroll.verticalScrollBar().setValue(self.scroll.verticalScrollBar().maximum())
     
   def editItem(self, pos, name, uid, type):
+    if self.existItem(uid, type, pos):
+      box = QMessageBox(self)
+      box.setText(f"下载项已存在，无法重复添加")
+      box.setWindowTitle(" Pixiv下载工具")
+      box.setFont(Font.LEVEL3)
+      okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
+      okButton.setFont(Font.LEVEL4)
+      box.setDefaultButton(okButton)
+      box.setStyleSheet(
+        """
+        QLabel {
+          color: red;
+        }
+        """
+      )
+      box.exec()
+      return None
     item = self.downloadCards[pos]
     nameBackup = item["name"].text()
     uidBackup = item["uid"].text()
@@ -850,15 +898,35 @@ class Download(QFrame):
       item["name"].setText(nameBackup)
       item["uid"].setText(uidBackup)
       item["type"].setText(typeBackup)
+      return False
+    return True
 
   def addItem(self, name, uid, type):
+    if self.existItem(uid, type):
+      box = QMessageBox(self)
+      box.setText(f"下载项已存在，无法重复添加")
+      box.setWindowTitle(" Pixiv下载工具")
+      box.setFont(Font.LEVEL3)
+      okButton = box.addButton("好的", QMessageBox.ButtonRole.AcceptRole)
+      okButton.setFont(Font.LEVEL4)
+      box.setDefaultButton(okButton)
+      box.setStyleSheet(
+        """
+        QLabel {
+          color: red;
+        }
+        """
+      )
+      box.exec()
+      return None
     self.addDownloadCard(name, uid, type)
     # 尝试保存，若失败则回退操作
     if self.save() == False:
       item = self.downloadCards.pop(len(self.downloadCards) - 1)
       item["download"].setParent(None)
       self.scroll_widget.adjustSize()
-      return
+      return False
+    return True
 
   # 更换下载选项卡的选择
   def switch(self, pos):
@@ -1047,6 +1115,10 @@ class Download(QFrame):
       return False
     else:
       logger.info("下载配置保存成功")
+      # 通知事件设置已经发生修改
+      if self.eventList.get("setUpdate") != None:
+        for event in self.eventList.get("setUpdate"):
+          event()
       return True
 
 
@@ -1122,7 +1194,34 @@ class Download(QFrame):
     # 记录信息从头开始
     self.count = 1
     self.downloadItemList = []
-        
+
+  
+  def existItem(self, uid, route, pos = -1):
+    """
+    判断下载项中是否存在对应uid和route的项
+    """
+    for i in range(len(self.downloadCards)):
+      if pos == i:
+        continue
+      item = self.downloadCards[i]
+      if item.get("uid").text() == uid and item.get("type").text() == route:
+        return True
+    return False
+  
+  def register(self, name: str, event):
+    """
+    注册事件，当某些更新时需要通知
+    """
+    if self.eventList.get(name) == None:
+      self.eventList[name] = [event]
+    else:
+      self.eventList[name].append(event)
+
+  def clearRegistration(self):
+    """
+    清除注册事件
+    """
+    self.eventList = {}
 
   # 获取组件当前是否可以切走
   def canSwitchOut(self):
@@ -1169,13 +1268,13 @@ class SpiderDownload(threading.Thread):
         name = item["name"]
         uid = item["uid"]
         type = item["type"]
+        QtCore.QCoreApplication.postEvent(self.target, AddContentEvent({
+          "type": "start",
+          "name": name,
+          "uid": uid,
+          "route": type
+        }))
         try:
-          QtCore.QCoreApplication.postEvent(self.target, AddContentEvent({
-            "type": "start",
-            "name": name,
-            "uid": uid,
-            "route": type
-          }))
           spider.download_by_info(uid, type)
         finally:
           QtCore.QCoreApplication.postEvent(self.target, AddContentEvent({
@@ -1227,6 +1326,10 @@ class SpiderDownload(threading.Thread):
       "update": False,
       # 可以没有，表示不特殊设置
       "color": "red"
+    }
+    ## 通知save_dir_name中有内容变动
+    {
+      "type": "makedir"
     }
     """
     QtCore.QCoreApplication.postEvent(self.target, AddContentEvent(content))

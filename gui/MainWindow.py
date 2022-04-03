@@ -48,8 +48,11 @@ class MainWindow(QMainWindow):
     # 右边区域
     account = Account(self.side.stateChange)
     download = Download(self.side.downloadStateChange)
-    view = View()
+    view = View(download.addItem)
     setting = Setting()
+    setting.register("setUpdate", view.updateSide)
+    download.register("setUpdate", view.updateSide)
+    download.register("contentUpdate", view.addContent)
     about = About()
     self.viewList = [account, download, view, setting, about]
     for right in self.viewList:

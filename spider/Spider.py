@@ -35,6 +35,18 @@ class Spider:
     """
     return list(cls.__routes.keys());
 
+  @classmethod
+  def isNovel(cls, route: str):
+    """
+    判断route是小说还是图片，若为小说返回True，否则返回False
+    """
+    if route in cls.__routes.keys():
+      if route.find("novels") < 0:
+        return False
+      return True
+    else:
+      raise Exception("不存在[{}]类型".format(route))
+
   def __init__(self, inform = None):
     """
     初始化spider对象
@@ -174,6 +186,9 @@ class Spider:
     if not os.path.exists(filepath):
       os.makedirs(filepath)
       logger.info("存储路径不存在，创建 path={}".format(filepath))
+      self.inform({
+        "type": "makedir"
+      })
     getattr(self, self.__routes.get(route))(uid, filepath)
 
   def download_illustrations(self, uid: str, filepath: str):
@@ -301,7 +316,7 @@ class Spider:
           "type": "image",
           "update": False,
           "url": image_url,
-          "method": "下载中",
+          "method": "正在下载",
           "color": "blue"
         })
 
@@ -405,7 +420,8 @@ class Spider:
           "update": True,
           "url": image_url,
           "path": storage_path,
-          "method": "搬运完成" if carry else "下载完成"
+          "method": "搬运完成" if carry else "下载完成",
+          "new": True
         })
       # 由于sqlite3的时区使用的不是本地时区，而mysql和python获取的时间均为本地时区，所以如果使用默认的download_time,会导致时间不一致，这里统一按照python代码获取的时间来存储和查询
       if False != self.database.escape_execute("insert into file (url, storage_path, md5, download_time) values ({}, {}, {}, {})", image_url, storage_path, get_md5(content), datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M:%S")):
@@ -723,7 +739,8 @@ class Spider:
         "update": True,
         "url": url,
         "path": storage_path,
-        "method": "搬运完成" if carry else "下载完成" 
+        "method": "搬运完成" if carry else "下载完成",
+        "new": True
       })
     # 由于sqlite3的时区使用的不是本地时区，而mysql和python获取的时间均为本地时区，所以如果使用默认的download_time,会导致时间不一致，这里统一按照python代码获取的时间来存储和查询
     if self.database.escape_execute("insert into file (url, storage_path, md5, download_time) values ({}, {}, {}, {})", url, storage_path, get_md5(content), datetime.strftime(datetime.now(),"%Y-%m-%d %H:%M:%S")) == False:

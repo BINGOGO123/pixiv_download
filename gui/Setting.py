@@ -351,9 +351,10 @@ class Setting(QFrame):
       
   def __init__(self, *args):
     super().__init__(*args)
-
+    # 设置修改时需要通知
+    self.eventList = {}
     self.initUI()
-    
+
     # 依据子组件状态更改changed值
     self.settingChanged()
 
@@ -684,6 +685,10 @@ class Setting(QFrame):
       else:
         logger.info("设置保存成功")
         self.settingChanged()
+        # 通知事件设置已经发生修改
+        if self.eventList.get("setUpdate") != None:
+          for event in self.eventList.get("setUpdate"):
+            event()
         # box = QMessageBox(self)
         # box.setText(f"配置文件保存成功")
         # box.setWindowTitle(" Pixiv下载工具")
@@ -772,6 +777,21 @@ class Setting(QFrame):
       return True
     else:
       return False
+
+  def register(self, name: str, event):
+    """
+    注册事件，当某些更新时需要通知
+    """
+    if self.eventList.get(name) == None:
+      self.eventList[name] = [event]
+    else:
+      self.eventList[name].append(event)
+
+  def clearRegistration(self):
+    """
+    清除注册事件
+    """
+    self.eventList = {}
 
   # 获取组件当前是否可以切走
   def canSwitchOut(self):
